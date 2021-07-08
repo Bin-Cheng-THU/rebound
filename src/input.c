@@ -146,14 +146,6 @@ int reb_input_field(struct reb_simulation* r, FILE* inf, enum reb_input_binary_m
         CASE(COLLISIONSPLOG,     &r->collisions_plog);
         CASE(MAXRADIUS,          &r->max_radius);
         CASE(COLLISIONSNLOG,     &r->collisions_Nlog);
-        CASE(CALCULATEMEGNO,     &r->calculate_megno);
-        CASE(MEGNOYS,            &r->megno_Ys);
-        CASE(MEGNOYSS,           &r->megno_Yss);
-        CASE(MEGNOCOVYT,         &r->megno_cov_Yt);
-        CASE(MEGNOVART,          &r->megno_var_t);
-        CASE(MEGNOMEANT,         &r->megno_mean_t);
-        CASE(MEGNOMEANY,         &r->megno_mean_Y);
-        CASE(MEGNON,             &r->megno_n);
         CASE(SAVERSION,          &r->simulationarchive_version);
         CASE(SASIZEFIRST,        &r->simulationarchive_size_first);
         CASE(SASIZESNAPSHOT,     &r->simulationarchive_size_snapshot);

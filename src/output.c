@@ -191,28 +191,6 @@ void reb_output_ascii(struct reb_simulation* r, char* filename){
     fclose(of);
 }
 
-void reb_output_orbits(struct reb_simulation* r, char* filename){
-    const int N = r->N;
-#ifdef MPI
-    char filename_mpi[1024];
-    sprintf(filename_mpi,"%s_%d",filename,r->mpi_id);
-    FILE* of = fopen(filename_mpi,"a"); 
-#else // MPI
-    FILE* of = fopen(filename,"a"); 
-#endif // MPI
-    if (of==NULL){
-        reb_error(r, "Can not open file.");
-        return;
-    }
-    struct reb_particle com = r->particles[0];
-    for (int i=1;i<N;i++){
-        struct reb_orbit o = reb_tools_particle_to_orbit(r->G, r->particles[i],com);
-        fprintf(of,"%e\t%e\t%e\t%e\t%e\t%e\t%e\t%e\t%e\n",r->t,o.a,o.e,o.inc,o.Omega,o.omega,o.l,o.P,o.f);
-        com = reb_get_com_of_pair(com,r->particles[i]);
-    }
-    fclose(of);
-}
-
 // Macro to write a single field to a binary file.
 // Memset forces padding to be set to 0 (not necessary but
 // helps when comparing binary files)
@@ -278,14 +256,6 @@ void reb_output_binary_to_stream(struct reb_simulation* r, char** bufp, size_t* 
     WRITE_FIELD(COLLISIONSPLOG,     &r->collisions_plog,                sizeof(double));
     WRITE_FIELD(MAXRADIUS,          &r->max_radius,                     2*sizeof(double));
     WRITE_FIELD(COLLISIONSNLOG,     &r->collisions_Nlog,                sizeof(long));
-    WRITE_FIELD(CALCULATEMEGNO,     &r->calculate_megno,                sizeof(int));
-    WRITE_FIELD(MEGNOYS,            &r->megno_Ys,                       sizeof(double));
-    WRITE_FIELD(MEGNOYSS,           &r->megno_Yss,                      sizeof(double));
-    WRITE_FIELD(MEGNOCOVYT,         &r->megno_cov_Yt,                   sizeof(double));
-    WRITE_FIELD(MEGNOVART,          &r->megno_var_t,                    sizeof(double));
-    WRITE_FIELD(MEGNOMEANT,         &r->megno_mean_t,                   sizeof(double));
-    WRITE_FIELD(MEGNOMEANY,         &r->megno_mean_Y,                   sizeof(double));
-    WRITE_FIELD(MEGNON,             &r->megno_n,                        sizeof(long));
     WRITE_FIELD(SAVERSION,          &r->simulationarchive_version,      sizeof(int));
     WRITE_FIELD(SASIZESNAPSHOT,     &r->simulationarchive_size_snapshot,sizeof(long));
     WRITE_FIELD(SAAUTOINTERVAL,     &r->simulationarchive_auto_interval, sizeof(double));

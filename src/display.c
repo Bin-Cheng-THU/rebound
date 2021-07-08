@@ -1107,21 +1107,7 @@ void reb_display_prepare_data(struct reb_simulation* const r, int orbits){
         data->particle_data[i].r  = p.r;
     }
     if (orbits){
-        struct reb_particle com = r_copy->particles[0];
-        for (int i=1;i<r_copy->N;i++){
-            struct reb_particle p = r_copy->particles[i];
-            data->orbit_data[i-1].x  = com.x;
-            data->orbit_data[i-1].y  = com.y;
-            data->orbit_data[i-1].z  = com.z;
-            struct reb_orbit o = reb_tools_particle_to_orbit(r_copy->G, p,com);
-            data->orbit_data[i-1].a = o.a;
-            data->orbit_data[i-1].e = o.e;
-            data->orbit_data[i-1].f = o.f;
-            data->orbit_data[i-1].omega = o.omega;
-            data->orbit_data[i-1].Omega = o.Omega;
-            data->orbit_data[i-1].inc = o.inc;
-            com = reb_get_com_of_pair(p,com);
-        }
+
     }
 }
 

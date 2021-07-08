@@ -427,7 +427,6 @@ void reb_init_simulation(struct reb_simulation* r){
     r->exact_finish_time    = 1;
     r->force_is_velocity_dependent = 0;
     r->gravity_ignore_terms    = 0;
-    r->calculate_megno  = 0;
     r->output_timing_last   = -1;
     r->save_messages = 0;
     r->track_energy_offset = 0;
