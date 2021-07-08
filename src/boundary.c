@@ -81,43 +81,6 @@ void reb_boundary_check(struct reb_simulation* const r){
 				}
 			}
 			break;
-		case REB_BOUNDARY_SHEAR:
-		{
-			// The offset of ghostcell is time dependent.
-			const double OMEGA = r->ri_sei.OMEGA;
-			const double offsetp1 = -fmod(-1.5*OMEGA*boxsize.x*r->t+boxsize.y/2.,boxsize.y)-boxsize.y/2.; 
-			const double offsetm1 = -fmod( 1.5*OMEGA*boxsize.x*r->t-boxsize.y/2.,boxsize.y)+boxsize.y/2.; 
-			struct reb_particle* const particles = r->particles;
-#pragma omp parallel for schedule(guided)
-			for (int i=0;i<N;i++){
-				// Radial
-				while(particles[i].x>boxsize.x/2.){
-					particles[i].x -= boxsize.x;
-					particles[i].y += offsetp1;
-					particles[i].vy += 3./2.*OMEGA*boxsize.x;
-				}
-				while(particles[i].x<-boxsize.x/2.){
-					particles[i].x += boxsize.x;
-					particles[i].y += offsetm1;
-					particles[i].vy -= 3./2.*OMEGA*boxsize.x;
-				}
-				// Azimuthal
-				while(particles[i].y>boxsize.y/2.){
-					particles[i].y -= boxsize.y;
-				}
-				while(particles[i].y<-boxsize.y/2.){
-					particles[i].y += boxsize.y;
-				}
-				// Vertical (there should be no boundary, but periodic makes life easier)
-				while(particles[i].z>boxsize.z/2.){
-					particles[i].z -= boxsize.z;
-				}
-				while(particles[i].z<-boxsize.z/2.){
-					particles[i].z += boxsize.z;
-				}
-			}
-		}
-		break;
 		case REB_BOUNDARY_PERIODIC:
 #pragma omp parallel for schedule(guided)
 			for (int i=0;i<N;i++){
@@ -159,30 +122,6 @@ struct reb_ghostbox reb_boundary_get_ghostbox(struct reb_simulation* const r, in
 			gb.shiftvx = 0;
 			gb.shiftvy = 0;
 			gb.shiftvz = 0;
-			return gb;
-		}
-		case REB_BOUNDARY_SHEAR:
-		{
-			const double OMEGA = r->ri_sei.OMEGA;
-			struct reb_ghostbox gb;
-			// Ghostboxes habe a finite velocity.
-			gb.shiftvx = 0.;
-			gb.shiftvy = -1.5*(double)i*OMEGA*r->boxsize.x;
-			gb.shiftvz = 0.;
-			// The shift in the y direction is time dependent. 
-			double shift;
-			if (i==0){
-				shift = -fmod(gb.shiftvy*r->t,r->boxsize.y); 
-			}else{
-				if (i>0){
-					shift = -fmod(gb.shiftvy*r->t-r->boxsize.y/2.,r->boxsize.y)-r->boxsize.y/2.; 
-				}else{
-					shift = -fmod(gb.shiftvy*r->t+r->boxsize.y/2.,r->boxsize.y)+r->boxsize.y/2.; 
-				}	
-			}
-			gb.shiftx = r->boxsize.x*(double)i;
-			gb.shifty = r->boxsize.y*(double)j-shift;
-			gb.shiftz = r->boxsize.z*(double)k;
 			return gb;
 		}
 		case REB_BOUNDARY_PERIODIC:

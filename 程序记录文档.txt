@@ -1,0 +1,37 @@
+程序记录文档：
+
+
+***************************************************
+程序结构：
+src： 程序源文件，自带makefile生成链接库
+
+example：主程序文件，描述具体问题
+***************************************************
+程序解析：
+
+
+主结构：
+rebound
+
+reb_simulation
+
+reb_particle
+
+积分器：
+integrator_ias15: Integrator with Adaptive Step-size control, 15th order
+integrator_mercurius: hybrid symplectic integrator very similar to MERCURY
+integrator_sei: Symplectic Epicycle Integrator (SEI)
+integrator_saba: SABA are symplectic integrators developed by Laskar & Robutel 2001 and Blanes et al. 2013.
+integrator_whfast: symplectic Wisdom-Holman integrator
+integrator_eos: Embedded Operator Splitting (EOS) methods described in Rein 2019.
+integrator_janus: bit-wise time-reversible high-order symplectic integrator
+
+***************************************************
+1. 删除所有不需要的积分器
+
+
+
+
+
+
+

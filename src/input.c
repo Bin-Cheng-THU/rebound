@@ -67,17 +67,6 @@ static int reb_fseek(FILE *stream, long offset, int whence, char **restrict mem_
     return -1;
 }
 
-
-void reb_read_dp7(struct reb_dp7* dp7, const int N3, FILE* inf, char **restrict mem_stream){
-    reb_fread(dp7->p0,sizeof(double),N3,inf,mem_stream);
-    reb_fread(dp7->p1,sizeof(double),N3,inf,mem_stream);
-    reb_fread(dp7->p2,sizeof(double),N3,inf,mem_stream);
-    reb_fread(dp7->p3,sizeof(double),N3,inf,mem_stream);
-    reb_fread(dp7->p4,sizeof(double),N3,inf,mem_stream);
-    reb_fread(dp7->p5,sizeof(double),N3,inf,mem_stream);
-    reb_fread(dp7->p6,sizeof(double),N3,inf,mem_stream);
-}
-
 // Macro to read a single field from a binary file.
 #define CASE(typename, value) case REB_BINARY_FIELD_TYPE_##typename: \
     {\
@@ -177,72 +166,15 @@ int reb_input_field(struct reb_simulation* r, FILE* inf, enum reb_input_binary_m
         CASE(INTEGRATOR,         &r->integrator);
         CASE(BOUNDARY,           &r->boundary);
         CASE(GRAVITY,            &r->gravity);
-        CASE(SEI_OMEGA,          &r->ri_sei.OMEGA);
-        CASE(SEI_OMEGAZ,         &r->ri_sei.OMEGAZ);
-        CASE(SEI_LASTDT,         &r->ri_sei.lastdt);
-        CASE(SEI_SINDT,          &r->ri_sei.sindt);
-        CASE(SEI_TANDT,          &r->ri_sei.tandt);
-        CASE(SEI_SINDTZ,         &r->ri_sei.sindtz);
-        CASE(SEI_TANDTZ,         &r->ri_sei.tandtz);
-        CASE(WHFAST_CORRECTOR,   &r->ri_whfast.corrector);
-        CASE(WHFAST_RECALCJAC,   &r->ri_whfast.recalculate_coordinates_this_timestep);
-        CASE(WHFAST_SAFEMODE,    &r->ri_whfast.safe_mode);
-        CASE(WHFAST_KEEPUNSYNC,  &r->ri_whfast.keep_unsynchronized);
-        CASE(WHFAST_ISSYNCHRON,  &r->ri_whfast.is_synchronized);
-        CASE(WHFAST_TIMESTEPWARN,&r->ri_whfast.timestep_warning);
-        CASE(WHFAST_COORDINATES, &r->ri_whfast.coordinates);
-        CASE(IAS15_EPSILON,      &r->ri_ias15.epsilon);
-        CASE(IAS15_MINDT,        &r->ri_ias15.min_dt);
-        CASE(IAS15_EPSILONGLOBAL,&r->ri_ias15.epsilon_global);
-        CASE(IAS15_ITERATIONSMAX,&r->ri_ias15.iterations_max_exceeded);
-        CASE(IAS15_ALLOCATEDN,   &r->ri_ias15.allocatedN);
-        CASE(JANUS_SCALEPOS,     &r->ri_janus.scale_pos);
-        CASE(JANUS_SCALEVEL,     &r->ri_janus.scale_vel);
-        CASE(JANUS_ORDER,        &r->ri_janus.order);
-        CASE(JANUS_ALLOCATEDN,   &r->ri_janus.allocated_N);
-        CASE(JANUS_RECALC,       &r->ri_janus.recalculate_integer_coordinates_this_timestep);
-        CASE(MERCURIUS_HILLFAC,  &r->ri_mercurius.hillfac);
-        CASE(MERCURIUS_SAFEMODE, &r->ri_mercurius.safe_mode);
-        CASE(MERCURIUS_ISSYNCHRON, &r->ri_mercurius.is_synchronized);
-        CASE(MERCURIUS_COMPOS,   &r->ri_mercurius.com_pos);
-        CASE(MERCURIUS_COMVEL,   &r->ri_mercurius.com_vel);
         CASE(PYTHON_UNIT_L,      &r->python_unit_l);
         CASE(PYTHON_UNIT_M,      &r->python_unit_m);
         CASE(PYTHON_UNIT_T,      &r->python_unit_t);
         CASE(STEPSDONE,          &r->steps_done);
         CASE(SAAUTOSTEP,         &r->simulationarchive_auto_step);
         CASE(SANEXTSTEP,         &r->simulationarchive_next_step);
-        CASE(SABA_TYPE,          &r->ri_saba.type);
-        CASE(SABA_KEEPUNSYNC,    &r->ri_saba.keep_unsynchronized);
-        CASE(EOS_PHI0,           &r->ri_eos.phi0);
-        CASE(EOS_PHI1,           &r->ri_eos.phi1);
-        CASE(EOS_N,              &r->ri_eos.n);
-        CASE(EOS_SAFEMODE,       &r->ri_eos.safe_mode);
-        CASE(EOS_ISSYNCHRON,     &r->ri_eos.is_synchronized);
         CASE(RAND_SEED,          &r->rand_seed);
         // temporary solution for depreciated SABA k and corrector variables.
         // can be removed in future versions
-        case 138: 
-            {
-            unsigned int k = 0;
-            reb_fread(&k, field.size,1,inf,mem_stream);
-            r->ri_saba.type/=0x100;
-            r->ri_saba.type += k-1;
-            }
-            break;
-        case 139: 
-            {
-            unsigned int corrector = 0;
-            reb_fread(&corrector, field.size,1,inf,mem_stream);
-            r->ri_saba.type%=0x100;
-            r->ri_saba.type += 0x100*corrector;
-            }
-            break;
-
-        CASE(SABA_SAFEMODE,      &r->ri_saba.safe_mode);
-        CASE(SABA_ISSYNCHRON,    &r->ri_saba.is_synchronized);
-        CASE(WHFAST_CORRECTOR2,  &r->ri_whfast.corrector2);
-        CASE(WHFAST_KERNEL,      &r->ri_whfast.kernel);
         case REB_BINARY_FIELD_TYPE_PARTICLES:
             if(r->particles){
                 free(r->particles);
@@ -266,26 +198,6 @@ int reb_input_field(struct reb_simulation* r, FILE* inf, enum reb_input_binary_m
                 }
             }
             break;
-        case REB_BINARY_FIELD_TYPE_WHFAST_PJ:
-            if(r->ri_whfast.p_jh){
-                free(r->ri_whfast.p_jh);
-            }
-            r->ri_whfast.allocated_N = (int)(field.size/sizeof(struct reb_particle));
-            if (field.size){
-                r->ri_whfast.p_jh = malloc(field.size);
-                reb_fread(r->ri_whfast.p_jh, field.size,1,inf,mem_stream);
-            }
-            break;
-        case REB_BINARY_FIELD_TYPE_JANUS_PINT:
-            if(r->ri_janus.p_int){
-                free(r->ri_janus.p_int);
-            }
-            r->ri_janus.allocated_N = (int)(field.size/sizeof(struct reb_particle_int));
-            if (field.size){
-                r->ri_janus.p_int = malloc(field.size);
-                reb_fread(r->ri_janus.p_int, field.size,1,inf,mem_stream);
-            }
-            break;
         case REB_BINARY_FIELD_TYPE_VARCONFIG:
             if (r->var_config){
                 free(r->var_config);
@@ -298,29 +210,6 @@ int reb_input_field(struct reb_simulation* r, FILE* inf, enum reb_input_binary_m
                 }
             }
             break;
-        case REB_BINARY_FIELD_TYPE_MERCURIUS_DCRIT:
-            if(r->ri_mercurius.dcrit){
-                free(r->ri_mercurius.dcrit);
-            }
-            r->ri_mercurius.dcrit_allocatedN = (int)(field.size/sizeof(double));
-            if (field.size){
-                r->ri_mercurius.dcrit = malloc(field.size);
-                reb_fread(r->ri_mercurius.dcrit, field.size,1,inf,mem_stream);
-            }
-            break;
-        CASE_MALLOC(IAS15_AT,     r->ri_ias15.at);
-        CASE_MALLOC(IAS15_X0,     r->ri_ias15.x0);
-        CASE_MALLOC(IAS15_V0,     r->ri_ias15.v0);
-        CASE_MALLOC(IAS15_A0,     r->ri_ias15.a0);
-        CASE_MALLOC(IAS15_CSX,    r->ri_ias15.csx);
-        CASE_MALLOC(IAS15_CSV,    r->ri_ias15.csv);
-        CASE_MALLOC(IAS15_CSA0,   r->ri_ias15.csa0);
-        CASE_MALLOC_DP7(IAS15_G,  r->ri_ias15.g);
-        CASE_MALLOC_DP7(IAS15_B,  r->ri_ias15.b);
-        CASE_MALLOC_DP7(IAS15_CSB,r->ri_ias15.csb);
-        CASE_MALLOC_DP7(IAS15_E,  r->ri_ias15.e);
-        CASE_MALLOC_DP7(IAS15_BR, r->ri_ias15.br);
-        CASE_MALLOC_DP7(IAS15_ER, r->ri_ias15.er);
         case REB_BINARY_FIELD_TYPE_END:
             return 0;
         case REB_BINARY_FIELD_TYPE_FUNCTIONPOINTERS:

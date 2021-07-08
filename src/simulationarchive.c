@@ -38,7 +38,6 @@
 #include "tools.h"
 #include "input.h"
 #include "output.h"
-#include "integrator_ias15.h"
 
 
 void reb_create_simulation_from_simulationarchive_with_messages(struct reb_simulation* r, struct reb_simulationarchive* sa, long snapshot, enum reb_input_binary_messages* warnings){
@@ -87,129 +86,6 @@ void reb_create_simulation_from_simulationarchive_with_messages(struct reb_simul
             r->simulationarchive_next = r->walltime + r->simulationarchive_auto_interval;
         }
         switch (r->integrator){
-            case REB_INTEGRATOR_JANUS:
-                {
-                    if (r->ri_janus.allocated_N<(unsigned int)r->N){
-                        if (r->ri_janus.p_int){
-                            free(r->ri_janus.p_int);
-                        }
-                        r->ri_janus.p_int= malloc(sizeof(struct reb_particle)*r->N);
-                        r->ri_janus.allocated_N = r->N;
-                    }
-                    fread(r->ri_janus.p_int,sizeof(struct reb_particle_int)*r->N,1,inf);
-                    reb_integrator_synchronize(r);  // get floating point coordinates 
-                }
-                break;
-            case REB_INTEGRATOR_WHFAST:
-            case REB_INTEGRATOR_SABA:
-                {
-                    // Recreate Jacobi arrrays
-                    struct reb_particle* ps = r->particles;
-                    if (r->ri_whfast.safe_mode==0){
-                        // If same mode is off, store unsynchronized Jacobi coordinates
-                        if (r->ri_whfast.allocated_N<(unsigned int)r->N){
-                            if (r->ri_whfast.p_jh){
-                                free(r->ri_whfast.p_jh);
-                            }
-                            r->ri_whfast.p_jh= malloc(sizeof(struct reb_particle)*r->N);
-                            r->ri_whfast.allocated_N = r->N;
-                        }
-                        ps = r->ri_whfast.p_jh;
-                    }
-                    for(int i=0;i<r->N;i++){
-                        fread(&(r->particles[i].m),sizeof(double),1,inf);
-                        fread(&(ps[i].x),sizeof(double),1,inf);
-                        fread(&(ps[i].y),sizeof(double),1,inf);
-                        fread(&(ps[i].z),sizeof(double),1,inf);
-                        fread(&(ps[i].vx),sizeof(double),1,inf);
-                        fread(&(ps[i].vy),sizeof(double),1,inf);
-                        fread(&(ps[i].vz),sizeof(double),1,inf);
-                    }
-                    if (r->ri_whfast.safe_mode==0){
-                        // Assume we are not synchronized
-                        r->ri_whfast.is_synchronized=0.;
-                        // Recalculate total mass
-                        double msum = r->particles[0].m;
-                        for (int i=1;i<r->N;i++){
-                            r->ri_whfast.p_jh[i].m = r->particles[i].m;
-                            r->ri_whfast.p_jh[i].r = r->particles[i].r;
-                            msum += r->particles[i].m;
-                        }
-                        r->ri_whfast.p_jh[0].m = msum;
-                        r->ri_whfast.p_jh[0].r = r->particles[0].r;
-                    }
-                }
-                break;
-            case REB_INTEGRATOR_MERCURIUS:
-                {
-                    // Recreate heliocentric arrrays
-                    struct reb_particle* ps = r->particles;
-                    if (r->ri_mercurius.safe_mode==0){
-                        // If same mode is off, store unsynchronized Jacobi coordinates
-                        if (r->ri_whfast.allocated_N<(unsigned int)r->N){
-                            if (r->ri_whfast.p_jh){
-                                free(r->ri_whfast.p_jh);
-                            }
-                            r->ri_whfast.p_jh= malloc(sizeof(struct reb_particle)*r->N);
-                            r->ri_whfast.allocated_N = r->N;
-                        }
-                        ps = r->ri_whfast.p_jh;
-                    }
-                    for(int i=0;i<r->N;i++){
-                        fread(&(r->particles[i].m),sizeof(double),1,inf);
-                        fread(&(ps[i].x),sizeof(double),1,inf);
-                        fread(&(ps[i].y),sizeof(double),1,inf);
-                        fread(&(ps[i].z),sizeof(double),1,inf);
-                        fread(&(ps[i].vx),sizeof(double),1,inf);
-                        fread(&(ps[i].vy),sizeof(double),1,inf);
-                        fread(&(ps[i].vz),sizeof(double),1,inf);
-                    }
-                    if (r->ri_mercurius.dcrit){
-                        free(r->ri_mercurius.dcrit);
-                    }
-                    r->ri_mercurius.dcrit = malloc(sizeof(double)*r->N);
-                    r->ri_mercurius.dcrit_allocatedN = r->N;
-                    fread(r->ri_mercurius.dcrit,sizeof(double),r->N,inf);
-                    if (r->ri_mercurius.safe_mode==0){
-                        // Assume we are not synchronized
-                        r->ri_mercurius.is_synchronized=0.;
-                        // Recalculate total mass
-                        double msum = r->particles[0].m;
-                        for (int i=1;i<r->N;i++){
-                            r->ri_whfast.p_jh[i].m = r->particles[i].m;
-                            r->ri_whfast.p_jh[i].r = r->particles[i].r;
-                            msum += r->particles[i].m;
-                        }
-                        r->ri_whfast.p_jh[0].m = msum;
-                        r->ri_whfast.p_jh[0].r = r->particles[0].r;
-                    }
-                }
-                break;
-            case REB_INTEGRATOR_IAS15:
-                {
-                    fread(&(r->dt),sizeof(double),1,inf);
-                    fread(&(r->dt_last_done),sizeof(double),1,inf);
-                    struct reb_particle* ps = r->particles;
-                    for(int i=0;i<r->N;i++){
-                        fread(&(ps[i].m),sizeof(double),1,inf);
-                        fread(&(ps[i].x),sizeof(double),1,inf);
-                        fread(&(ps[i].y),sizeof(double),1,inf);
-                        fread(&(ps[i].z),sizeof(double),1,inf);
-                        fread(&(ps[i].vx),sizeof(double),1,inf);
-                        fread(&(ps[i].vy),sizeof(double),1,inf);
-                        fread(&(ps[i].vz),sizeof(double),1,inf);
-                    }
-                    reb_integrator_ias15_alloc(r);
-                    const int N3 = r->N*3;
-                    reb_read_dp7(&(r->ri_ias15.b)  ,N3,inf,NULL);
-                    reb_read_dp7(&(r->ri_ias15.csb),N3,inf,NULL);
-                    reb_read_dp7(&(r->ri_ias15.e)  ,N3,inf,NULL);
-                    reb_read_dp7(&(r->ri_ias15.br) ,N3,inf,NULL);
-                    reb_read_dp7(&(r->ri_ias15.er) ,N3,inf,NULL);
-                    fread((r->ri_ias15.csx),sizeof(double)*N3,1,inf);
-                    fread((r->ri_ias15.csv),sizeof(double)*N3,1,inf);
-                }
-                break;
             default:
                 *warnings |= REB_INPUT_BINARY_ERROR_INTEGRATOR;
                 reb_free_simulation(r);
@@ -442,22 +318,6 @@ void reb_free_simulationarchive_pointers(struct reb_simulationarchive* sa){
 static int reb_simulationarchive_snapshotsize(struct reb_simulation* const r){
     int size_snapshot = 0;
     switch (r->integrator){
-        case REB_INTEGRATOR_JANUS:
-            size_snapshot = sizeof(double)*2+sizeof(struct reb_particle_int)*r->N;
-            break;
-        case REB_INTEGRATOR_WHFAST:
-        case REB_INTEGRATOR_SABA:
-            size_snapshot = sizeof(double)*2+sizeof(double)*7*r->N;
-            break;
-        case REB_INTEGRATOR_MERCURIUS:
-            size_snapshot = sizeof(double)*2+sizeof(double)*8*r->N;
-            break;
-        case REB_INTEGRATOR_IAS15:
-            size_snapshot =  sizeof(double)*4  // time, walltime, dt, dt_last_done
-                             +sizeof(double)*3*r->N*5*7  // dp7 arrays
-                             +sizeof(double)*7*r->N      // particle m, pos, vel
-                             +sizeof(double)*3*r->N*2;   // csx, csv
-            break;
         default:
             reb_error(r,"Simulation archive not implemented for this integrator.");
             break;
@@ -498,15 +358,6 @@ void reb_simulationarchive_heartbeat(struct reb_simulation* const r){
         } 
     }
 }
-static inline void reb_save_dp7_old(struct reb_dp7* dp7, const int N3, FILE* of){
-    fwrite(dp7->p0,sizeof(double),N3,of);
-    fwrite(dp7->p1,sizeof(double),N3,of);
-    fwrite(dp7->p2,sizeof(double),N3,of);
-    fwrite(dp7->p3,sizeof(double),N3,of);
-    fwrite(dp7->p4,sizeof(double),N3,of);
-    fwrite(dp7->p5,sizeof(double),N3,of);
-    fwrite(dp7->p6,sizeof(double),N3,of);
-}
 
 void reb_simulationarchive_snapshot(struct reb_simulation* const r, const char* filename){
     if (filename==NULL) filename = r->simulationarchive_filename;
@@ -527,70 +378,6 @@ void reb_simulationarchive_snapshot(struct reb_simulation* const r, const char* 
             fwrite(&(r->t),sizeof(double),1, of);
             fwrite(&(r->walltime),sizeof(double),1, of);
             switch (r->integrator){
-                case REB_INTEGRATOR_JANUS:
-                    {
-                        fwrite(r->ri_janus.p_int,sizeof(struct reb_particle_int)*r->N,1,of);
-                    }
-                    break;
-                case REB_INTEGRATOR_WHFAST:
-                    {
-                        struct reb_particle* ps = r->particles;
-                        if (r->ri_whfast.safe_mode==0){
-                            ps = r->ri_whfast.p_jh;
-                        }
-                        for(int i=0;i<r->N;i++){
-                            fwrite(&(r->particles[i].m),sizeof(double),1,of);
-                            fwrite(&(ps[i].x),sizeof(double),1,of);
-                            fwrite(&(ps[i].y),sizeof(double),1,of);
-                            fwrite(&(ps[i].z),sizeof(double),1,of);
-                            fwrite(&(ps[i].vx),sizeof(double),1,of);
-                            fwrite(&(ps[i].vy),sizeof(double),1,of);
-                            fwrite(&(ps[i].vz),sizeof(double),1,of);
-                        }
-                    }
-                    break;
-                case REB_INTEGRATOR_MERCURIUS:
-                    {
-                        struct reb_particle* ps = r->particles;
-                        if (r->ri_mercurius.safe_mode==0){
-                            ps = r->ri_whfast.p_jh;
-                        }
-                        for(int i=0;i<r->N;i++){
-                            fwrite(&(r->particles[i].m),sizeof(double),1,of);
-                            fwrite(&(ps[i].x),sizeof(double),1,of);
-                            fwrite(&(ps[i].y),sizeof(double),1,of);
-                            fwrite(&(ps[i].z),sizeof(double),1,of);
-                            fwrite(&(ps[i].vx),sizeof(double),1,of);
-                            fwrite(&(ps[i].vy),sizeof(double),1,of);
-                            fwrite(&(ps[i].vz),sizeof(double),1,of);
-                        }
-                        fwrite(r->ri_mercurius.dcrit,sizeof(double),r->N,of);
-                    }
-                    break;
-                case REB_INTEGRATOR_IAS15:
-                    {
-                        fwrite(&(r->dt),sizeof(double),1,of);
-                        fwrite(&(r->dt_last_done),sizeof(double),1,of);
-                        struct reb_particle* ps = r->particles;
-                        const int N3 = r->N*3;
-                        for(int i=0;i<r->N;i++){
-                            fwrite(&(ps[i].m),sizeof(double),1,of);
-                            fwrite(&(ps[i].x),sizeof(double),1,of);
-                            fwrite(&(ps[i].y),sizeof(double),1,of);
-                            fwrite(&(ps[i].z),sizeof(double),1,of);
-                            fwrite(&(ps[i].vx),sizeof(double),1,of);
-                            fwrite(&(ps[i].vy),sizeof(double),1,of);
-                            fwrite(&(ps[i].vz),sizeof(double),1,of);
-                        }
-                        reb_save_dp7_old(&(r->ri_ias15.b)  ,N3,of);
-                        reb_save_dp7_old(&(r->ri_ias15.csb),N3,of);
-                        reb_save_dp7_old(&(r->ri_ias15.e)  ,N3,of);
-                        reb_save_dp7_old(&(r->ri_ias15.br) ,N3,of);
-                        reb_save_dp7_old(&(r->ri_ias15.er) ,N3,of);
-                        fwrite((r->ri_ias15.csx),sizeof(double)*N3,1,of);
-                        fwrite((r->ri_ias15.csv),sizeof(double)*N3,1,of);
-                    }
-                    break;
                 default:
                     reb_error(r,"Simulation archive not implemented for this integrator.");
                     break;

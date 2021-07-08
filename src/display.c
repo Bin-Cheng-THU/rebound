@@ -540,11 +540,7 @@ static void reb_display(GLFWwindow* window){
         glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, j);
         
         glUniform1f(data->simplefont_shader_ypos_location, ypos++);
-        if (data->r_copy->integrator==REB_INTEGRATOR_SEI){
-            sprintf(str, "t = %f [orb]  ", data->r_copy->t*data->r_copy->ri_sei.OMEGA/2./M_PI);
-        }else{
-            sprintf(str, "t = %f  ", data->r_copy->t);
-        }
+        sprintf(str, "t = %f  ", data->r_copy->t);
         j = convertLine(str,val);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(val), val);
         glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, j);
@@ -612,11 +608,7 @@ void reb_display_init(struct reb_simulation * const r){
     data->spheres       = 0; 
     data->pause         = 0; 
     data->multisample = 1; 
-    if (data->r->integrator==REB_INTEGRATOR_WHFAST){
-        data->wire          = 1; 
-    }else{
-        data->wire          = 0; 
-    }
+    data->wire          = 0; 
     data->onscreentext  = 1; 
     data->clear         = 1; 
     data->ghostboxes    = 0; 
@@ -1091,18 +1083,6 @@ int reb_display_copy_data(struct reb_simulation* const r){
     memcpy(data->r_copy, r, sizeof(struct reb_simulation));
     memcpy(data->particles_copy, r->particles, sizeof(struct reb_particle)*r->N);
     data->r_copy->particles = data->particles_copy;
-    if (
-            (r->integrator==REB_INTEGRATOR_WHFAST && r->ri_whfast.is_synchronized==0)
-       )
-       {
-        if (r->ri_whfast.allocated_N > data->allocated_N_whfast){
-            size_changed = 1;
-            data->allocated_N_whfast = r->ri_whfast.allocated_N;
-            data->p_jh_copy = realloc(data->p_jh_copy,data->allocated_N_whfast*sizeof(struct reb_particle));
-        }
-        memcpy(data->p_jh_copy, r->ri_whfast.p_jh, data->allocated_N_whfast*sizeof(struct reb_particle));
-    }
-    data->r_copy->ri_whfast.p_jh= data->p_jh_copy;
     
     return size_changed;
 }

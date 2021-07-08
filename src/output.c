@@ -34,7 +34,6 @@
 #include "tools.h"
 #include "output.h"
 #include "integrator.h"
-#include "integrator_sei.h"
 #include "input.h"
 #ifdef MPI
 #include "communication_mpi.h"
@@ -122,11 +121,7 @@ void reb_output_timing(struct reb_simulation* r, const double tmax){
 #endif // PROFILING
     }
     printf("N_tot= %- 9d  ",N_tot);
-    if (r->integrator==REB_INTEGRATOR_SEI){
-        printf("t= %- 9f [orb]  ",r->t*r->ri_sei.OMEGA/2./M_PI);
-    }else{
-        printf("t= %- 9f  ",r->t);
-    }
+    printf("t= %- 9f  ",r->t);
     printf("dt= %- 9f  ",r->dt);
     printf("cpu= %- 9f [s]  ",temp-r->output_timing_last);
     if (tmax>0){
@@ -218,16 +213,6 @@ void reb_output_orbits(struct reb_simulation* r, char* filename){
     fclose(of);
 }
 
-void static inline reb_save_dp7(struct reb_dp7* dp7, const int N3, char** bufp, size_t* sizep, size_t* allocatedsize){
-    reb_output_stream_write(bufp, allocatedsize, sizep, dp7->p0,sizeof(double)*N3);
-    reb_output_stream_write(bufp, allocatedsize, sizep, dp7->p1,sizeof(double)*N3);
-    reb_output_stream_write(bufp, allocatedsize, sizep, dp7->p2,sizeof(double)*N3);
-    reb_output_stream_write(bufp, allocatedsize, sizep, dp7->p3,sizeof(double)*N3);
-    reb_output_stream_write(bufp, allocatedsize, sizep, dp7->p4,sizeof(double)*N3);
-    reb_output_stream_write(bufp, allocatedsize, sizep, dp7->p5,sizeof(double)*N3);
-    reb_output_stream_write(bufp, allocatedsize, sizep, dp7->p6,sizeof(double)*N3);
-}
-
 // Macro to write a single field to a binary file.
 // Memset forces padding to be set to 0 (not necessary but
 // helps when comparing binary files)
@@ -312,55 +297,12 @@ void reb_output_binary_to_stream(struct reb_simulation* r, char** bufp, size_t* 
     WRITE_FIELD(INTEGRATOR,         &r->integrator,                     sizeof(int));
     WRITE_FIELD(BOUNDARY,           &r->boundary,                       sizeof(int));
     WRITE_FIELD(GRAVITY,            &r->gravity,                        sizeof(int));
-    WRITE_FIELD(SEI_OMEGA,          &r->ri_sei.OMEGA,                   sizeof(double));
-    WRITE_FIELD(SEI_OMEGAZ,         &r->ri_sei.OMEGAZ,                  sizeof(double));
-    WRITE_FIELD(SEI_LASTDT,         &r->ri_sei.lastdt,                  sizeof(double));
-    WRITE_FIELD(SEI_SINDT,          &r->ri_sei.sindt,                   sizeof(double));
-    WRITE_FIELD(SEI_TANDT,          &r->ri_sei.tandt,                   sizeof(double));
-    WRITE_FIELD(SEI_SINDTZ,         &r->ri_sei.sindtz,                  sizeof(double));
-    WRITE_FIELD(SEI_TANDTZ,         &r->ri_sei.tandtz,                  sizeof(double));
-    WRITE_FIELD(WHFAST_CORRECTOR,   &r->ri_whfast.corrector,            sizeof(unsigned int));
-    WRITE_FIELD(WHFAST_RECALCJAC,   &r->ri_whfast.recalculate_coordinates_this_timestep, sizeof(unsigned int));
-    WRITE_FIELD(WHFAST_SAFEMODE,    &r->ri_whfast.safe_mode,            sizeof(unsigned int));
-    WRITE_FIELD(WHFAST_KEEPUNSYNC,  &r->ri_whfast.keep_unsynchronized,  sizeof(unsigned int));
-    WRITE_FIELD(WHFAST_ISSYNCHRON,  &r->ri_whfast.is_synchronized,      sizeof(unsigned int));
-    WRITE_FIELD(WHFAST_TIMESTEPWARN,&r->ri_whfast.timestep_warning,     sizeof(unsigned int));
-    WRITE_FIELD(WHFAST_PJ,          r->ri_whfast.p_jh,                  sizeof(struct reb_particle)*r->ri_whfast.allocated_N);
-    WRITE_FIELD(WHFAST_COORDINATES, &r->ri_whfast.coordinates,          sizeof(int));
-    WRITE_FIELD(IAS15_EPSILON,      &r->ri_ias15.epsilon,               sizeof(double));
-    WRITE_FIELD(IAS15_MINDT,        &r->ri_ias15.min_dt,                sizeof(double));
-    WRITE_FIELD(IAS15_EPSILONGLOBAL,&r->ri_ias15.epsilon_global,        sizeof(unsigned int));
-    WRITE_FIELD(IAS15_ITERATIONSMAX,&r->ri_ias15.iterations_max_exceeded,sizeof(unsigned long));
-    WRITE_FIELD(IAS15_ALLOCATEDN,   &r->ri_ias15.allocatedN,            sizeof(int));
-    WRITE_FIELD(JANUS_SCALEPOS,     &r->ri_janus.scale_pos,             sizeof(double));
-    WRITE_FIELD(JANUS_SCALEVEL,     &r->ri_janus.scale_vel,             sizeof(double));
-    WRITE_FIELD(JANUS_ORDER,        &r->ri_janus.order,                 sizeof(unsigned int));
-    WRITE_FIELD(JANUS_ALLOCATEDN,   &r->ri_janus.allocated_N,           sizeof(unsigned int));
-    WRITE_FIELD(JANUS_RECALC,       &r->ri_janus.recalculate_integer_coordinates_this_timestep, sizeof(unsigned int));
-    WRITE_FIELD(JANUS_PINT,         r->ri_janus.p_int,                  sizeof(struct reb_particle_int)*r->ri_janus.allocated_N);
-    WRITE_FIELD(MERCURIUS_HILLFAC,  &r->ri_mercurius.hillfac,           sizeof(double));
-    WRITE_FIELD(MERCURIUS_SAFEMODE, &r->ri_mercurius.safe_mode,         sizeof(unsigned int));
-    WRITE_FIELD(MERCURIUS_ISSYNCHRON, &r->ri_mercurius.is_synchronized, sizeof(unsigned int));
-    WRITE_FIELD(MERCURIUS_DCRIT,    r->ri_mercurius.dcrit,              sizeof(double)*r->ri_mercurius.dcrit_allocatedN);
-    WRITE_FIELD(MERCURIUS_COMPOS,   &(r->ri_mercurius.com_pos),         sizeof(struct reb_vec3d));
-    WRITE_FIELD(MERCURIUS_COMVEL,   &(r->ri_mercurius.com_vel),         sizeof(struct reb_vec3d));
     WRITE_FIELD(PYTHON_UNIT_L,      &r->python_unit_l,                  sizeof(uint32_t));
     WRITE_FIELD(PYTHON_UNIT_M,      &r->python_unit_m,                  sizeof(uint32_t));
     WRITE_FIELD(PYTHON_UNIT_T,      &r->python_unit_t,                  sizeof(uint32_t));
     WRITE_FIELD(STEPSDONE,          &r->steps_done,                     sizeof(unsigned long long));
     WRITE_FIELD(SAAUTOSTEP,         &r->simulationarchive_auto_step,    sizeof(unsigned long long));
     WRITE_FIELD(SANEXTSTEP,         &r->simulationarchive_next_step,    sizeof(unsigned long long));
-    WRITE_FIELD(SABA_TYPE,          &r->ri_saba.type,                   sizeof(unsigned int));
-    WRITE_FIELD(SABA_SAFEMODE,      &r->ri_saba.safe_mode,              sizeof(unsigned int));
-    WRITE_FIELD(SABA_ISSYNCHRON,    &r->ri_saba.is_synchronized,        sizeof(unsigned int));
-    WRITE_FIELD(SABA_KEEPUNSYNC,    &r->ri_saba.keep_unsynchronized,    sizeof(unsigned int));
-    WRITE_FIELD(WHFAST_CORRECTOR2,  &r->ri_whfast.corrector2,           sizeof(unsigned int));
-    WRITE_FIELD(WHFAST_KERNEL,      &r->ri_whfast.kernel,               sizeof(unsigned int));
-    WRITE_FIELD(EOS_PHI0,           &r->ri_eos.phi0,                    sizeof(unsigned int));
-    WRITE_FIELD(EOS_PHI1,           &r->ri_eos.phi1,                    sizeof(unsigned int));
-    WRITE_FIELD(EOS_N,              &r->ri_eos.n,                       sizeof(unsigned int));
-    WRITE_FIELD(EOS_SAFEMODE,       &r->ri_eos.safe_mode,               sizeof(unsigned int));
-    WRITE_FIELD(EOS_ISSYNCHRON,     &r->ri_eos.is_synchronized,         sizeof(unsigned int));
     WRITE_FIELD(RAND_SEED,          &r->rand_seed,                      sizeof(unsigned int));
     int functionpointersused = 0;
     if (r->coefficient_of_restitution ||
@@ -389,46 +331,6 @@ void reb_output_binary_to_stream(struct reb_simulation* r, char** bufp, size_t* 
     } 
     if (r->var_config){
         WRITE_FIELD(VARCONFIG,      r->var_config,                      sizeof(struct reb_variational_configuration)*r->var_config_N);
-    }
-    if (r->ri_ias15.allocatedN){
-        int N3 = r->ri_ias15.allocatedN;
-        WRITE_FIELD(IAS15_AT,   r->ri_ias15.at,     sizeof(double)*N3);
-        WRITE_FIELD(IAS15_X0,   r->ri_ias15.x0,     sizeof(double)*N3);
-        WRITE_FIELD(IAS15_V0,   r->ri_ias15.v0,     sizeof(double)*N3);
-        WRITE_FIELD(IAS15_A0,   r->ri_ias15.a0,     sizeof(double)*N3);
-        WRITE_FIELD(IAS15_CSX,  r->ri_ias15.csx,    sizeof(double)*N3);
-        WRITE_FIELD(IAS15_CSV,  r->ri_ias15.csv,    sizeof(double)*N3);
-        WRITE_FIELD(IAS15_CSA0, r->ri_ias15.csa0,   sizeof(double)*N3);
-        {
-            struct reb_binary_field field = {.type = REB_BINARY_FIELD_TYPE_IAS15_G, .size = sizeof(double)*N3*7};
-            reb_output_stream_write(bufp, &allocatedsize, sizep, &field,sizeof(struct reb_binary_field));
-            reb_save_dp7(&(r->ri_ias15.g),N3,bufp,sizep,&allocatedsize);
-        }
-        {
-            struct reb_binary_field field = {.type = REB_BINARY_FIELD_TYPE_IAS15_B, .size = sizeof(double)*N3*7};
-            reb_output_stream_write(bufp, &allocatedsize, sizep, &field,sizeof(struct reb_binary_field));
-            reb_save_dp7(&(r->ri_ias15.b),N3,bufp,sizep,&allocatedsize);
-        }
-        {
-            struct reb_binary_field field = {.type = REB_BINARY_FIELD_TYPE_IAS15_CSB, .size = sizeof(double)*N3*7};
-            reb_output_stream_write(bufp, &allocatedsize, sizep, &field,sizeof(struct reb_binary_field));
-            reb_save_dp7(&(r->ri_ias15.csb),N3,bufp,sizep,&allocatedsize);
-        }
-        {
-            struct reb_binary_field field = {.type = REB_BINARY_FIELD_TYPE_IAS15_E, .size = sizeof(double)*N3*7};
-            reb_output_stream_write(bufp, &allocatedsize, sizep, &field,sizeof(struct reb_binary_field));
-            reb_save_dp7(&(r->ri_ias15.e),N3,bufp,sizep,&allocatedsize);
-        }
-        {
-            struct reb_binary_field field = {.type = REB_BINARY_FIELD_TYPE_IAS15_BR, .size = sizeof(double)*N3*7};
-            reb_output_stream_write(bufp, &allocatedsize, sizep, &field,sizeof(struct reb_binary_field));
-            reb_save_dp7(&(r->ri_ias15.br),N3,bufp,sizep,&allocatedsize);
-        }
-        {
-            struct reb_binary_field field = {.type = REB_BINARY_FIELD_TYPE_IAS15_ER, .size = sizeof(double)*N3*7};
-            reb_output_stream_write(bufp, &allocatedsize, sizep, &field,sizeof(struct reb_binary_field));
-            reb_save_dp7(&(r->ri_ias15.er),N3,bufp,sizep,&allocatedsize);
-        }
     }
     // To output size of binary file, need to calculate it first. 
     r->simulationarchive_size_first = (*sizep)+sizeof(struct reb_binary_field)*2+sizeof(long)+sizeof(struct reb_simulationarchive_blob);
@@ -491,18 +393,10 @@ void reb_output_velocity_dispersion(struct reb_simulation* r, char* filename){
         struct reb_vec3d Aim1 = A;
         struct reb_particle p = r->particles[i];
         A.x = A.x + (p.vx-A.x)/(double)(i+1);
-        if (r->integrator==REB_INTEGRATOR_SEI){
-            A.y = A.y + (p.vy+1.5*r->ri_sei.OMEGA*p.x-A.y)/(double)(i+1);
-        }else{
-            A.y = A.y + (p.vy-A.y)/(double)(i+1);
-        }
+        A.y = A.y + (p.vy-A.y)/(double)(i+1);
         A.z = A.z + (p.vz-A.z)/(double)(i+1);
         Q.x = Q.x + (p.vx-Aim1.x)*(p.vx-A.x);
-        if (r->integrator==REB_INTEGRATOR_SEI){
-            Q.y = Q.y + (p.vy+1.5*r->ri_sei.OMEGA*p.x-Aim1.y)*(p.vy+1.5*r->ri_sei.OMEGA*p.x-A.y);
-        }else{
-            Q.y = Q.y + (p.vy-Aim1.y)*(p.vy-A.y);
-        }
+        Q.y = Q.y + (p.vy-Aim1.y)*(p.vy-A.y);
         Q.z = Q.z + (p.vz-Aim1.z)*(p.vz-A.z);
     }
 #ifdef MPI

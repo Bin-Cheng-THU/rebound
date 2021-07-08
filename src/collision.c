@@ -52,17 +52,6 @@ void reb_collision_search(struct reb_simulation* const r){
     int N = r->N - r->N_var;
     int Ninner = N;
     int* mercurius_map = NULL;
-    if (r->integrator==REB_INTEGRATOR_MERCURIUS){
-        if (r->ri_mercurius.mode==0){
-            // After jump step, only collisions with star might occur.
-            // All other collisions in encounter step/
-            Ninner = 1;
-        }else{
-            N = r->ri_mercurius.encounterN;
-            Ninner = N;
-            mercurius_map = r->ri_mercurius.encounter_map;
-        }
-    }
     int collisions_N = 0;
     const struct reb_particle* const particles = r->particles;
     switch (r->collision){
@@ -347,9 +336,6 @@ void reb_collision_search(struct reb_simulation* const r){
         resolve = reb_collision_resolve_halt;
     }
     unsigned int collision_resolve_keep_sorted = r->collision_resolve_keep_sorted;
-    if (r->integrator == REB_INTEGRATOR_MERCURIUS){
-        collision_resolve_keep_sorted = 1; // Force keep_sorted for hybrid integrator
-    }
 
     for (int i=0;i<collisions_N;i++){
         
@@ -760,11 +746,6 @@ int reb_collision_resolve_merge(struct reb_simulation* const r, struct reb_colli
             double vy = pi->vy;
             double vz = pi->vz;
             // Calculate energy difference in inertial frame
-            if (r->integrator == REB_INTEGRATOR_MERCURIUS && r->ri_mercurius.mode==1){
-                vx += r->ri_mercurius.com_vel.x;
-                vy += r->ri_mercurius.com_vel.y;
-                vz += r->ri_mercurius.com_vel.z;
-            }
 
             Ei += 0.5*pi->m*(vx*vx + vy*vy + vz*vz);
         }
@@ -772,11 +753,6 @@ int reb_collision_resolve_merge(struct reb_simulation* const r, struct reb_colli
             double vx = pj->vx;
             double vy = pj->vy;
             double vz = pj->vz;
-            if (r->integrator == REB_INTEGRATOR_MERCURIUS && r->ri_mercurius.mode==1){
-                vx += r->ri_mercurius.com_vel.x;
-                vy += r->ri_mercurius.com_vel.y;
-                vz += r->ri_mercurius.com_vel.z;
-            }
 
             Ei += 0.5*pj->m*(vx*vx + vy*vy + vz*vz);
         }
@@ -810,11 +786,6 @@ int reb_collision_resolve_merge(struct reb_simulation* const r, struct reb_colli
             double vx = pi->vx;
             double vy = pi->vy;
             double vz = pi->vz;
-            if (r->integrator == REB_INTEGRATOR_MERCURIUS && r->ri_mercurius.mode==1){
-                vx += r->ri_mercurius.com_vel.x;
-                vy += r->ri_mercurius.com_vel.y;
-                vz += r->ri_mercurius.com_vel.z;
-            }
 
             Ef += 0.5*pi->m*(vx*vx + vy*vy + vz*vz);
         }

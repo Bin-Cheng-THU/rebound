@@ -32,8 +32,6 @@
 #include "tree.h"
 #include "boundary.h"
 #include "particle.h"
-#include "integrator_ias15.h"
-#include "integrator_mercurius.h"
 #ifndef COLLISIONS_NONE
 #include "collision.h"
 #endif // COLLISIONS_NONE
@@ -71,32 +69,6 @@ static void reb_add_local(struct reb_simulation* const r, struct reb_particle pt
 		reb_tree_add_particle_to_tree(r, r->N);
 	}
 	(r->N)++;
-    if (r->integrator == REB_INTEGRATOR_MERCURIUS){
-        struct reb_simulation_integrator_mercurius* rim = &(r->ri_mercurius);
-        if (r->ri_mercurius.mode==0){ //WHFast part
-            rim->recalculate_dcrit_this_timestep       = 1;
-            rim->recalculate_coordinates_this_timestep = 1;
-        }else{  // IAS15 part
-            reb_integrator_ias15_reset(r);
-            if (rim->dcrit_allocatedN<r->N){
-                rim->dcrit              = realloc(rim->dcrit, sizeof(double)*r->N);
-                rim->dcrit_allocatedN = r->N;
-            }
-            rim->dcrit[r->N-1] = reb_integrator_mercurius_calculate_dcrit_for_particle(r,r->N-1);
-            if (rim->allocatedN<r->N){
-                rim->particles_backup   = realloc(rim->particles_backup,sizeof(struct reb_particle)*r->N);
-                rim->encounter_map      = realloc(rim->encounter_map,sizeof(int)*r->N);
-                rim->allocatedN = r->N;
-            }
-            rim->encounter_map[rim->encounterN] = r->N-1;
-            rim->encounterN++;
-            if (r->N_active==-1){ 
-                // If global N_active is not set, then all particles are active, so the new one as well.
-                // Otherwise, assume we're adding non active particle. 
-                rim->encounterNactive++;
-            }
-        }
-    }
 }
 
 void reb_add(struct reb_simulation* const r, struct reb_particle pt){
@@ -260,36 +232,6 @@ void reb_remove_all(struct reb_simulation* const r){
 }
 
 int reb_remove(struct reb_simulation* const r, int index, int keepSorted){
-    if (r->integrator == REB_INTEGRATOR_MERCURIUS){
-        keepSorted = 1; // Force keepSorted for hybrid integrator
-        struct reb_simulation_integrator_mercurius* rim = &(r->ri_mercurius);
-        if (rim->dcrit_allocatedN>0 && index<rim->dcrit_allocatedN){
-            for (int i=0;i<r->N-1;i++){
-                if (i>=index){
-                    rim->dcrit[i] = rim->dcrit[i+1];
-                }
-            }
-        }
-        reb_integrator_ias15_reset(r);
-        if (r->ri_mercurius.mode==1){
-            struct reb_simulation_integrator_mercurius* rim = &(r->ri_mercurius);
-            int after_to_be_removed_particle = 0;
-            int encounter_index = -1;
-            for (int i=0;i<rim->encounterN;i++){
-                if (after_to_be_removed_particle == 1){
-                    rim->encounter_map[i-1] = rim->encounter_map[i] - 1; 
-                }
-                if (rim->encounter_map[i]==index){
-                    encounter_index = i;
-                    after_to_be_removed_particle = 1;
-                }
-            }
-            if (encounter_index<rim->encounterNactive){
-                rim->encounterNactive--;
-            }
-            rim->encounterN--;
-        }
-    }
 	if (r->N==1){
 	    r->N = 0;
         if(r->free_particle_ap){

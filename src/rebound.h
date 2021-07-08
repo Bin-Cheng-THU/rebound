@@ -54,6 +54,7 @@ struct reb_display_data;
 struct reb_treecell;
 struct reb_variational_configuration;
 
+//rebound颗粒
 struct reb_particle {
     double x;
     double y;
@@ -80,17 +81,6 @@ struct reb_vec3d {
     double z;
 };
 
-// Generic pointer with 7 elements, for internal use only (IAS15).
-struct reb_dp7 {
-    double* REBOUND_RESTRICT p0;
-    double* REBOUND_RESTRICT p1;
-    double* REBOUND_RESTRICT p2;
-    double* REBOUND_RESTRICT p3;
-    double* REBOUND_RESTRICT p4;
-    double* REBOUND_RESTRICT p5;
-    double* REBOUND_RESTRICT p6;
-};
-
 struct reb_ghostbox{
     double shiftx;
     double shifty;
@@ -101,162 +91,6 @@ struct reb_ghostbox{
 };
 
 // Integrator structures 
-struct reb_simulation_integrator_ias15 {
-    double epsilon;
-    double min_dt;
-    unsigned int epsilon_global;
-   
-    // Internal use
-    unsigned long iterations_max_exceeded; // Counter how many times the iteration did not converge. 
-    int allocatedN;          
-    double* REBOUND_RESTRICT at;
-    double* REBOUND_RESTRICT x0;
-    double* REBOUND_RESTRICT v0;
-    double* REBOUND_RESTRICT a0;
-    double* REBOUND_RESTRICT csx;
-    double* REBOUND_RESTRICT csv;
-    double* REBOUND_RESTRICT csa0;
-
-    struct reb_dp7 g;
-    struct reb_dp7 b;
-    struct reb_dp7 csb;  // Compensated summation storage for b
-    struct reb_dp7 e;
-    struct reb_dp7 br;   // Used for resetting the b coefficients if a timestep gets rejected
-    struct reb_dp7 er;   // Same for e coefficients
-
-    int* map;               // internal map to particles (this is an identity map except when MERCURIUS is used
-    int map_allocated_N;    // allocated size for map
-};
-
-struct reb_simulation_integrator_mercurius {
-    double (*L) (const struct reb_simulation* const r, double d, double dcrit);  
-    double hillfac;        
-    unsigned int recalculate_coordinates_this_timestep;
-    unsigned int recalculate_dcrit_this_timestep;
-    unsigned int safe_mode;
-   
-    // Internal use
-    unsigned int is_synchronized;   
-    unsigned int mode;              // 0 if WH is operating, 1 if IAS15 is operating.
-    unsigned int encounterN;        // Number of particles currently having an encounter
-    unsigned int encounterNactive;  // Number of active particles currently having an encounter
-    unsigned int tponly_encounter;  // 0 if any encounters are between two massive bodies. 1 if encounters only involve test particles
-    unsigned int allocatedN;
-    unsigned int allocatedN_additionalforces;
-    unsigned int dcrit_allocatedN;  // Current size of dcrit arrays
-    double* dcrit;                  // Precalculated switching radii for particles
-    struct reb_particle* REBOUND_RESTRICT particles_backup; //  contains coordinates before Kepler step for encounter prediction
-    struct reb_particle* REBOUND_RESTRICT particles_backup_additionalforces; // contains coordinates before Kepler step for encounter prediction
-    int* encounter_map;             // Map to represent which particles are integrated with ias15
-    struct reb_vec3d com_pos;       // Used to keep track of the centre of mass during the timestep
-    struct reb_vec3d com_vel;
-};
-
-struct reb_simulation_integrator_sei {
-    double OMEGA;
-    double OMEGAZ;
-    // Internal
-    double lastdt;      ///< Cached sin(), tan() for this value of dt.
-    double sindt;       ///< Cached sin() 
-    double tandt;       ///< Cached tan() 
-    double sindtz;      ///< Cached sin(), z axis
-    double tandtz;      ///< Cached tan(), z axis
-};
-
-struct reb_simulation_integrator_saba {
-    enum {
-        REB_SABA_1 = 0x0, // WH
-        REB_SABA_2 = 0x1, // SABA2
-        REB_SABA_3 = 0x2, // SABA3
-        REB_SABA_4 = 0x3, // SABA4
-        REB_SABA_CM_1 = 0x100, // SABACM1 (Modified kick corrector)
-        REB_SABA_CM_2 = 0x101, // SABACM2 (Modified kick corrector)
-        REB_SABA_CM_3 = 0x102, // SABACM3 (Modified kick corrector)
-        REB_SABA_CM_4 = 0x103, // SABACM4 (Modified kick corrector)
-        REB_SABA_CL_1 = 0x200, // SABACL1 (lazy corrector)
-        REB_SABA_CL_2 = 0x201, // SABACL2 (lazy corrector)
-        REB_SABA_CL_3 = 0x202, // SABACL3 (lazy corrector)
-        REB_SABA_CL_4 = 0x203, // SABACL4 (lazy corrector)
-        REB_SABA_10_4 = 0x4,   // SABA(10,4), 7 stages
-        REB_SABA_8_6_4 = 0x5,  // SABA(8,6,4), 7 stages
-        REB_SABA_10_6_4 = 0x6, // SABA(10,6,4), 8 stages, default
-        REB_SABA_H_8_4_4 = 0x7,// SABAH(8,4,4), 6 stages
-        REB_SABA_H_8_6_4 = 0x8,// SABAH(8,6,4), 8 stages
-        REB_SABA_H_10_6_4 = 0x9,// SABAH(10,6,4), 9 stages
-    } type;
-    unsigned int safe_mode;
-    unsigned int is_synchronized;
-    unsigned int keep_unsynchronized;
-};
-
-struct reb_simulation_integrator_whfast {
-    unsigned int corrector;
-    unsigned int corrector2;
-    enum {
-        REB_WHFAST_KERNEL_DEFAULT = 0,
-        REB_WHFAST_KERNEL_MODIFIEDKICK = 1,
-        REB_WHFAST_KERNEL_COMPOSITION = 2,
-        REB_WHFAST_KERNEL_LAZY = 3,
-    }kernel;
-    enum {
-        REB_WHFAST_COORDINATES_JACOBI = 0,                      ///< Jacobi coordinates (default)
-        REB_WHFAST_COORDINATES_DEMOCRATICHELIOCENTRIC = 1,      ///< Democratic Heliocentric coordinates
-        REB_WHFAST_COORDINATES_WHDS = 2,                        ///< WHDS coordinates (Hernandez and Dehnen, 2017)
-        } coordinates;
-    unsigned int recalculate_coordinates_this_timestep;
-    unsigned int safe_mode;
-    unsigned int keep_unsynchronized;
-    // Internal 
-    struct reb_particle* REBOUND_RESTRICT p_jh;     // Jacobi/heliocentric/WHDS coordinates
-    struct reb_particle* REBOUND_RESTRICT p_temp;   // Used for lazy implementer's kernel 
-    unsigned int is_synchronized;
-    unsigned int allocated_N;
-    unsigned int allocated_Ntemp;
-    unsigned int timestep_warning;
-    unsigned int recalculate_coordinates_but_not_synchronized_warning;
-};
-
-enum REB_EOS_TYPE {
-    REB_EOS_LF = 0x00, 
-    REB_EOS_LF4 = 0x01,
-    REB_EOS_LF6 = 0x02,
-    REB_EOS_LF8 = 0x03, 
-    REB_EOS_LF4_2 = 0x04,
-    REB_EOS_LF8_6_4= 0x05,
-    REB_EOS_PLF7_6_4= 0x06,
-    REB_EOS_PMLF4 = 0x07,
-    REB_EOS_PMLF6 = 0x08,
-};
-
-struct reb_simulation_integrator_eos {
-    enum REB_EOS_TYPE phi0;
-    enum REB_EOS_TYPE phi1;
-    unsigned int n;
-    unsigned int safe_mode;
-    unsigned int is_synchronized;
-};
-
-
-// Integer-based positions and velocities for particles. Used in JANUS integrator. 
-#define REB_PARTICLE_INT_TYPE int64_t
-struct reb_particle_int {
-    REB_PARTICLE_INT_TYPE x;
-    REB_PARTICLE_INT_TYPE y;
-    REB_PARTICLE_INT_TYPE z;
-    REB_PARTICLE_INT_TYPE vx;
-    REB_PARTICLE_INT_TYPE vy;
-    REB_PARTICLE_INT_TYPE vz;
-};
-
-struct reb_simulation_integrator_janus {
-    double scale_pos;
-    double scale_vel;
-    unsigned int order;
-    unsigned int recalculate_integer_coordinates_this_timestep;
-    struct reb_particle_int* REBOUND_RESTRICT p_int;
-    unsigned int allocated_N;
-};
-
 struct reb_collision{
     int p1;
     int p2;
@@ -546,15 +380,8 @@ struct reb_simulation {
         REB_COLLISION_LINETREE = 5, // Tree-based collision search O(N log(N)), looks for collisions by assuming a linear path over the last timestep
         } collision;
     enum {
-        REB_INTEGRATOR_IAS15 = 0,    // IAS15 integrator, 15th order, non-symplectic (default)
-        REB_INTEGRATOR_WHFAST = 1,   // WHFast integrator, symplectic, 2nd order, up to 11th order correctors
-        REB_INTEGRATOR_SEI = 2,      // SEI integrator for shearing sheet simulations, symplectic, needs OMEGA variable
         REB_INTEGRATOR_LEAPFROG = 4, // LEAPFROG integrator, simple, 2nd order, symplectic
         REB_INTEGRATOR_NONE = 7,     // Do not integrate anything
-        REB_INTEGRATOR_JANUS = 8,    // Bit-wise reversible JANUS integrator.
-        REB_INTEGRATOR_MERCURIUS = 9,// MERCURIUS integrator 
-        REB_INTEGRATOR_SABA = 10,    // SABA integrator family (Laskar and Robutel 2001)
-        REB_INTEGRATOR_EOS = 11,     // Embedded Operator Splitting (EOS) integrator family (Rein 2019)
         } integrator;
     enum {
         REB_BOUNDARY_NONE = 0,      // Do not check for anything (default)
@@ -572,13 +399,6 @@ struct reb_simulation {
         } gravity;
 
     // Integrators
-    struct reb_simulation_integrator_sei ri_sei;            // The SEI struct 
-    struct reb_simulation_integrator_whfast ri_whfast;      // The WHFast struct 
-    struct reb_simulation_integrator_saba ri_saba;          // The SABA struct 
-    struct reb_simulation_integrator_ias15 ri_ias15;        // The IAS15 struct
-    struct reb_simulation_integrator_mercurius ri_mercurius;// The MERCURIUS struct
-    struct reb_simulation_integrator_janus ri_janus;        // The JANUS struct 
-    struct reb_simulation_integrator_eos ri_eos;            // The EOS struct 
 
      // Callback functions
     void (*additional_forces) (struct reb_simulation* const r);
@@ -645,12 +465,6 @@ void reb_update_acceleration(struct reb_simulation* r);
 // If r1 and r2 are exactly equal to each other then 0 is returned, otherwise 1. Walltime is ignored.
 // If output_option=1, then output is printed on the screen. If 2, only return value os given. 
 int reb_diff_simulations(struct reb_simulation* r1, struct reb_simulation* r2, int output_option);
-
-// Mercurius switching functions
-double reb_integrator_mercurius_L_mercury(const struct reb_simulation* const r, double d, double dcrit);
-double reb_integrator_mercurius_L_infinity(const struct reb_simulation* const r, double d, double dcrit);
-double reb_integrator_mercurius_L_C4(const struct reb_simulation* const r, double d, double dcrit);
-double reb_integrator_mercurius_L_C5(const struct reb_simulation* const r, double d, double dcrit);
 
 // Collision resolve functions
 int reb_collision_resolve_halt(struct reb_simulation* const r, struct reb_collision c);
@@ -1002,17 +816,4 @@ struct reb_display_data {
     unsigned int orbit_shader_particle_vao;
     unsigned int orbit_shader_vertex_count;
 };
-
-
-// Temporary. Function declarations needed by REBOUNDx 
-void reb_integrator_ias15_reset(struct reb_simulation* r);         ///< Internal function used to call a specific integrator
-void reb_integrator_ias15_part2(struct reb_simulation* r);         ///< Internal function used to call a specific integrator
-void reb_integrator_whfast_from_inertial(struct reb_simulation* const r);   ///< Internal function to the appropriate WHFast coordinates from inertial
-void reb_integrator_whfast_to_inertial(struct reb_simulation* const r); ///< Internal function to move back from particular WHFast coordinates to inertial
-void reb_integrator_whfast_reset(struct reb_simulation* r);		///< Internal function used to call a specific integrator
-int reb_integrator_whfast_init(struct reb_simulation* const r);    ///< Internal function to check errors and allocate memory if needed
-void reb_whfast_interaction_step(struct reb_simulation* const r, const double _dt);///< Internal function
-void reb_whfast_jump_step(const struct reb_simulation* const r, const double _dt); ///< Internal function
-void reb_whfast_kepler_step(const struct reb_simulation* const r, const double _dt); ///< Internal function
-void reb_whfast_com_step(const struct reb_simulation* const r, const double _dt); ///< Internal function
 #endif // _MAIN_H

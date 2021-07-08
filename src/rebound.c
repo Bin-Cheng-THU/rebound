@@ -36,10 +36,6 @@
 #include <fcntl.h>
 #include "rebound.h"
 #include "integrator.h"
-#include "integrator_saba.h"
-#include "integrator_whfast.h"
-#include "integrator_ias15.h"
-#include "integrator_mercurius.h"
 #include "boundary.h"
 #include "gravity.h"
 #include "collision.h"
@@ -84,8 +80,6 @@ void reb_step(struct reb_simulation* const r){
     if (r->pre_timestep_modifications){
         reb_integrator_synchronize(r);
         r->pre_timestep_modifications(r);
-        r->ri_whfast.recalculate_coordinates_this_timestep = 1;
-        r->ri_mercurius.recalculate_coordinates_this_timestep = 1;
     }
    
     reb_integrator_part1(r);
@@ -140,8 +134,6 @@ void reb_step(struct reb_simulation* const r){
     if (r->post_timestep_modifications){
         reb_integrator_synchronize(r);
         r->post_timestep_modifications(r);
-        r->ri_whfast.recalculate_coordinates_this_timestep = 1;
-        r->ri_mercurius.recalculate_coordinates_this_timestep = 1;
     }
     PROFILING_STOP(PROFILING_CAT_INTEGRATOR)
 
@@ -282,16 +274,6 @@ void reb_mpi_finalize(struct reb_simulation* const r){
 }
 #endif // MPI
 
-static void set_dp7_null(struct reb_dp7 * dp){
-    dp->p0 = NULL;
-    dp->p1 = NULL;
-    dp->p2 = NULL;
-    dp->p3 = NULL;
-    dp->p4 = NULL;
-    dp->p5 = NULL;
-    dp->p6 = NULL;
-}
-
 void reb_free_simulation(struct reb_simulation* const r){
     reb_free_pointers(r);
     free(r);
@@ -311,9 +293,6 @@ void reb_free_pointers(struct reb_simulation* const r){
     }
     free(r->gravity_cs  );
     free(r->collisions  );
-    reb_integrator_whfast_reset(r);
-    reb_integrator_ias15_reset(r);
-    reb_integrator_mercurius_reset(r);
     if(r->free_particle_ap){
         for(int i=0; i<r->N; i++){
             r->free_particle_ap(&r->particles[i]);
@@ -345,45 +324,6 @@ void reb_reset_temporary_pointers(struct reb_simulation* const r){
     r->particle_lookup_table = NULL;
     r->N_lookup = 0;
     r->allocatedN_lookup = 0;
-    // ********** WHFAST
-    r->ri_whfast.allocated_N    = 0;
-    r->ri_whfast.allocated_Ntemp= 0;
-    r->ri_whfast.p_jh           = NULL;
-    r->ri_whfast.p_temp         = NULL;
-    r->ri_whfast.keep_unsynchronized = 0;
-    // ********** IAS15
-    r->ri_ias15.allocatedN      = 0;
-    set_dp7_null(&(r->ri_ias15.g));
-    set_dp7_null(&(r->ri_ias15.b));
-    set_dp7_null(&(r->ri_ias15.csb));
-    set_dp7_null(&(r->ri_ias15.e));
-    set_dp7_null(&(r->ri_ias15.br));
-    set_dp7_null(&(r->ri_ias15.er));
-    r->ri_ias15.at          = NULL;
-    r->ri_ias15.x0          = NULL;
-    r->ri_ias15.v0          = NULL;
-    r->ri_ias15.a0          = NULL;
-    r->ri_ias15.csx         = NULL;
-    r->ri_ias15.csv         = NULL;
-    r->ri_ias15.csa0        = NULL;
-    r->ri_ias15.at          = NULL;
-    r->ri_ias15.map_allocated_N      = 0;
-    r->ri_ias15.map         = NULL;
-    // ********** MERCURIUS
-    r->ri_mercurius.allocatedN = 0;
-    r->ri_mercurius.allocatedN_additionalforces = 0;
-    r->ri_mercurius.dcrit_allocatedN = 0;
-    r->ri_mercurius.dcrit = NULL;
-    r->ri_mercurius.particles_backup = NULL;
-    r->ri_mercurius.particles_backup_additionalforces = NULL;
-    r->ri_mercurius.encounter_map = NULL;
-    // ********** JANUS
-    r->ri_janus.allocated_N = 0;
-    r->ri_janus.p_int = NULL;
-    r->ri_janus.recalculate_integer_coordinates_this_timestep = 0;
-    r->ri_janus.order = 6;
-    r->ri_janus.scale_pos = 1e-16;
-    r->ri_janus.scale_vel = 1e-16;
 }
 
 int reb_reset_function_pointers(struct reb_simulation* const r){
@@ -534,57 +474,13 @@ void reb_init_simulation(struct reb_simulation* r){
 #else // OPENGL
     r->visualization= REB_VISUALIZATION_NONE;
 #endif // OPENGL
-    r->integrator   = REB_INTEGRATOR_IAS15;
+    r->integrator   = REB_INTEGRATOR_LEAPFROG;
     r->boundary     = REB_BOUNDARY_NONE;
     r->gravity      = REB_GRAVITY_BASIC;
     r->collision    = REB_COLLISION_NONE;
 
 
-    // Integrators  
-    // ********** WHFAST
-    // the defaults below are chosen to safeguard the user against spurious results, but
-    // will be slower and less accurate
-    r->ri_whfast.corrector = 0;
-    r->ri_whfast.corrector2 = 0;
-    r->ri_whfast.kernel = 0;
-    r->ri_whfast.coordinates = REB_WHFAST_COORDINATES_JACOBI;
-    r->ri_whfast.safe_mode = 1;
-    r->ri_whfast.recalculate_coordinates_this_timestep = 0;
-    r->ri_whfast.is_synchronized = 1;
-    r->ri_whfast.timestep_warning = 0;
-    r->ri_whfast.recalculate_coordinates_but_not_synchronized_warning = 0;
-    
-    // ********** SABA
-    r->ri_saba.type = REB_SABA_10_6_4;
-    r->ri_saba.safe_mode = 1;
-    r->ri_saba.is_synchronized = 1;
-    
-    // ********** IAS15
-    r->ri_ias15.epsilon         = 1e-9;
-    r->ri_ias15.min_dt      = 0;
-    r->ri_ias15.epsilon_global  = 1;
-    r->ri_ias15.iterations_max_exceeded = 0;    
-    
-    // ********** SEI
-    r->ri_sei.OMEGA     = 1;
-    r->ri_sei.OMEGAZ    = -1;
-    r->ri_sei.lastdt    = 0;
-    
-    // ********** MERCURIUS
-    r->ri_mercurius.mode = 0;
-    r->ri_mercurius.safe_mode = 1;
-    r->ri_mercurius.recalculate_coordinates_this_timestep = 0;
-    r->ri_mercurius.recalculate_dcrit_this_timestep = 0;
-    r->ri_mercurius.is_synchronized = 1;
-    r->ri_mercurius.encounterN = 0;
-    r->ri_mercurius.hillfac = 3;
-    
-    // ********** EOS
-    r->ri_eos.n = 2;
-    r->ri_eos.phi0 = REB_EOS_LF;
-    r->ri_eos.phi1 = REB_EOS_LF;
-    r->ri_eos.safe_mode = 1;
-    r->ri_eos.is_synchronized = 1;
+    // Integrators 
 
     // Tree parameters. Will not be used unless gravity or collision search makes use of tree.
     r->tree_needs_update= 0;
