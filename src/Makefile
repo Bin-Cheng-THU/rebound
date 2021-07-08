@@ -2,7 +2,7 @@ include Makefile.defs
 
 OPT+= -fPIC -DLIBREBOUND
 
-SOURCES=rebound.c tree.c particle.c gravity.c integrator.c integrator_leapfrog.c boundary.c input.c output.c collision.c communication_mpi.c display.c tools.c simulationarchive.c glad.c transformations.c
+SOURCES=rebound.c tree.c particle.c gravity.c integrator.c integrator_leapfrog.c boundary.c input.c output.c collision.c communication_mpi.c display.c tools.c simulationarchive.c glad.c
 OBJECTS=$(SOURCES:.c=.o)
 HEADERS=$(SOURCES:.c=.h)
 
