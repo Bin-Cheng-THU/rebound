@@ -33,7 +33,6 @@
 #include <stdint.h>
 #include "particle.h"
 #include "rebound.h"
-#include "binarydiff.h"
 #include "output.h"
 #include "tools.h"
 #include "input.h"
@@ -404,32 +403,10 @@ void reb_simulationarchive_snapshot(struct reb_simulation* const r, const char* 
             char* buf_new;
             size_t size_new;
             reb_output_binary_to_stream(r, &buf_new, &size_new);
-            
-            // Create buffer containing diff
-            char* buf_diff;
-            size_t size_diff;
-            reb_binary_diff(buf_old, size_old, buf_new, size_new, &buf_diff, &size_diff);
-            
-            // Update blob info and Write diff to binary file
-            struct reb_simulationarchive_blob blob = {0};
-            fseek(of, -sizeof(struct reb_simulationarchive_blob), SEEK_END);  
-            fread(&blob, sizeof(struct reb_simulationarchive_blob), 1, of);
-            blob.offset_next = size_diff+sizeof(struct reb_binary_field);
-            fseek(of, -sizeof(struct reb_simulationarchive_blob), SEEK_END);  
-            fwrite(&blob, sizeof(struct reb_simulationarchive_blob), 1, of);
-            fwrite(buf_diff, size_diff, 1, of); 
-            field.type = REB_BINARY_FIELD_TYPE_END;
-            field.size = 0;
-            fwrite(&field,sizeof(struct reb_binary_field), 1, of);
-            blob.index++;
-            blob.offset_prev = blob.offset_next;
-            blob.offset_next = 0;
-            fwrite(&blob, sizeof(struct reb_simulationarchive_blob), 1, of);
 
             fclose(of);
             free(buf_new);
             free(buf_old);
-            free(buf_diff);
         }
     }
 }
