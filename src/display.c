@@ -1024,7 +1024,6 @@ void reb_display_init(struct reb_simulation * const r){
         glBindBuffer(GL_ARRAY_BUFFER, particle_buffer);
         glBufferSubData(GL_ARRAY_BUFFER, 0, data->r_copy->N*sizeof(struct reb_particle_opengl), data->particle_data);
         glBindBuffer(GL_ARRAY_BUFFER, orbit_buffer);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, (data->r_copy->N-1)*sizeof(struct reb_orbit_opengl), data->orbit_data);
 
         // Do actual drawing
         reb_display(window);
@@ -1078,7 +1077,6 @@ int reb_display_copy_data(struct reb_simulation* const r){
         data->r_copy = realloc(data->r_copy,sizeof(struct reb_simulation));
         data->particles_copy = realloc(data->particles_copy,r->N*sizeof(struct reb_particle));
         data->particle_data = realloc(data->particle_data, data->allocated_N*sizeof(struct reb_particle_opengl));
-        data->orbit_data = realloc(data->orbit_data, data->allocated_N*sizeof(struct reb_orbit_opengl));
     }
     memcpy(data->r_copy, r, sizeof(struct reb_simulation));
     memcpy(data->particles_copy, r->particles, sizeof(struct reb_particle)*r->N);

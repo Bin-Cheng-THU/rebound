@@ -40,4 +40,10 @@ void reb_tools_init_srand(struct reb_simulation* r);
  */
 void reb_fsr_heartbeat(struct reb_simulation* const r);
 
+// Random sampling
+double reb_random_uniform(struct reb_simulation* r, double min, double max);
+double reb_random_powerlaw(struct reb_simulation* r, double min, double max, double slope);
+double reb_random_normal(struct reb_simulation* r, double variance);
+double reb_random_rayleigh(struct reb_simulation* r, double sigma);
+
 #endif 	// TOOLS_H

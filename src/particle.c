@@ -107,7 +107,7 @@ int reb_particle_check_testparticles(struct reb_simulation* const r){
     }
     // Check if testparticle of type 0 has mass!=0
     if (r->testparticle_type == 0){
-        const int N_real = r->N - r->N_var;
+        const int N_real = r->N;
         for (int i=r->N_active; i<N_real; i++){
             if (r->particles[i].m!=0.){
                 return 1;
@@ -226,7 +226,6 @@ void reb_remove_all(struct reb_simulation* const r){
 	r->N 		= 0;
 	r->allocatedN 	= 0;
 	r->N_active 	= -1;
-	r->N_var 	= 0;
 	free(r->particles);
 	r->particles 	= NULL;
 }
@@ -244,10 +243,6 @@ int reb_remove(struct reb_simulation* const r, int index, int keepSorted){
 		char warning[1024];
         sprintf(warning, "Index %d passed to particles_remove was out of range (N=%d).  Did not remove particle.", index, r->N);
 		reb_error(r, warning);
-		return 0;
-	}
-	if (r->N_var){
-		reb_error(r, "Removing particles not supported when calculating MEGNO.  Did not remove particle.");
 		return 0;
 	}
 	if(keepSorted){
@@ -294,43 +289,6 @@ int reb_remove_by_hash(struct reb_simulation* const r, uint32_t hash, int keepSo
         int index = reb_get_particle_index(p);
         return reb_remove(r, index, keepSorted);
     }
-}
-
-void reb_particle_isub(struct reb_particle* p1, struct reb_particle* p2){
-    p1->x -= p2->x;
-    p1->y -= p2->y;
-    p1->z -= p2->z;
-    p1->vx -= p2->vx;
-    p1->vy -= p2->vy;
-    p1->vz -= p2->vz;
-    p1->m -= p2->m;
-}
-
-void reb_particle_iadd(struct reb_particle* p1, struct reb_particle* p2){
-    p1->x += p2->x;
-    p1->y += p2->y;
-    p1->z += p2->z;
-    p1->vx += p2->vx;
-    p1->vy += p2->vy;
-    p1->vz += p2->vz;
-    p1->m += p2->m;
-}
-
-void reb_particle_imul(struct reb_particle* p1, double value){
-    p1->x *= value;
-    p1->y *= value;
-    p1->z *= value;
-    p1->vx *= value;
-    p1->vy *= value;
-    p1->vz *= value;
-    p1->m *= value;
-}
-
-double reb_particle_distance(struct reb_particle* p1, struct reb_particle* p2){
-    double dx = p1->x - p2->x;
-    double dy = p1->y - p2->y;
-    double dz = p1->z - p2->z;
-    return sqrt(dx*dx + dy*dy + dz*dz);
 }
 
 struct reb_particle reb_particle_nan(void){

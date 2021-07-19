@@ -28,12 +28,6 @@ struct reb_simulation;
 struct reb_particle;
 struct reb_treecell;
 
-// Functions to operate on particles
-void reb_particle_isub(struct reb_particle* p1, struct reb_particle* p2);
-void reb_particle_iadd(struct reb_particle* p1, struct reb_particle* p2);
-void reb_particle_imul(struct reb_particle* p1, double value);
-double reb_particle_distance(struct reb_particle* p1, struct reb_particle* p2);
-
 /**
  * @brief Returns the index of the rootbox for the current particles based on its position.
  * @param r REBOUND simulation to be considered.

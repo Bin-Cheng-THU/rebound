@@ -21,6 +21,8 @@ int main(int argc, char* argv[]){
     struct reb_simulation* const r = reb_create_simulation();
     // Setup constants
     r->integrator    = REB_INTEGRATOR_LEAPFROG;
+    //r->collision        = REB_COLLISION_TREE;
+    //r->collision_resolve = reb_collision_resolve_hardsphere;
     r->gravity    = REB_GRAVITY_TREE;
     r->boundary    = REB_BOUNDARY_OPEN;
     r->opening_angle2    = 1.5;        // This constant determines the accuracy of the tree code gravity estimate.

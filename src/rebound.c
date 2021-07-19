@@ -69,6 +69,7 @@ void reb_steps(struct reb_simulation* const r, unsigned int N_steps){
         reb_step(r);
     }
 }
+
 void reb_step(struct reb_simulation* const r){
     // Update walltime
     struct timeval time_beginning;
@@ -119,9 +120,7 @@ void reb_step(struct reb_simulation* const r){
 
     // Calculate accelerations. 
     reb_calculate_acceleration(r);
-    if (r->N_var){
-        reb_calculate_acceleration_var(r);
-    }
+
     // Calculate non-gravity accelerations. 
     if (r->additional_forces) r->additional_forces(r);
     PROFILING_STOP(PROFILING_CAT_GRAVITY)
@@ -287,7 +286,6 @@ void reb_free_pointers(struct reb_simulation* const r){
         free(r->display_data->particles_copy);
         free(r->display_data->p_jh_copy);
         free(r->display_data->particle_data);
-        free(r->display_data->orbit_data);
         free(r->display_data); // TODO: Free other pointers in display_data
     }
     free(r->gravity_cs  );
@@ -308,7 +306,6 @@ void reb_free_pointers(struct reb_simulation* const r){
     if (r->extras_cleanup){
         r->extras_cleanup(r);
     }
-    free(r->var_config);
 }
 
 void reb_reset_temporary_pointers(struct reb_simulation* const r){
@@ -416,9 +413,6 @@ void reb_init_simulation(struct reb_simulation* r){
     r->allocatedN_lookup = 0;
     r->testparticle_type = 0;   
     r->testparticle_hidewarnings = 0;
-    r->N_var    = 0;    
-    r->var_config_N = 0;    
-    r->var_config   = NULL;     
     r->exit_min_distance    = 0;    
     r->exit_max_distance    = 0;    
     r->max_radius[0]    = 0.;   
@@ -567,7 +561,7 @@ void reb_run_heartbeat(struct reb_simulation* const r){
         // Check for escaping particles
         const double max2 = r->exit_max_distance * r->exit_max_distance;
         const struct reb_particle* const particles = r->particles;
-        const int N = r->N - r->N_var;
+        const int N = r->N;
         for (int i=0;i<N;i++){
             struct reb_particle p = particles[i];
             double r2 = p.x*p.x + p.y*p.y + p.z*p.z;
@@ -580,7 +574,7 @@ void reb_run_heartbeat(struct reb_simulation* const r){
         // Check for close encounters
         const double min2 = r->exit_min_distance * r->exit_min_distance;
         const struct reb_particle* const particles = r->particles;
-        const int N = r->N - r->N_var;
+        const int N = r->N;
         for (int i=0;i<N;i++){
             struct reb_particle pi = particles[i];
             for (int j=0;j<i;j++){

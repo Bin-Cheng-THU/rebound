@@ -52,7 +52,6 @@ extern volatile sig_atomic_t reb_sigint;  ///< Graceful global interrupt handler
 struct reb_simulation;
 struct reb_display_data;
 struct reb_treecell;
-struct reb_variational_configuration;
 
 //rebound颗粒
 struct reb_particle {
@@ -90,7 +89,6 @@ struct reb_ghostbox{
     double shiftvz;
 };
 
-// Integrator structures 
 struct reb_collision{
     int p1;
     int p2;
@@ -169,75 +167,21 @@ enum REB_BINARY_FIELD_TYPE {
     REB_BINARY_FIELD_TYPE_INTEGRATOR = 51,
     REB_BINARY_FIELD_TYPE_BOUNDARY = 52,
     REB_BINARY_FIELD_TYPE_GRAVITY = 53,
-    REB_BINARY_FIELD_TYPE_SEI_OMEGA = 54,
-    REB_BINARY_FIELD_TYPE_SEI_OMEGAZ = 55,
-    REB_BINARY_FIELD_TYPE_SEI_LASTDT = 56,
-    REB_BINARY_FIELD_TYPE_SEI_SINDT = 57,
-    REB_BINARY_FIELD_TYPE_SEI_TANDT = 58,
-    REB_BINARY_FIELD_TYPE_SEI_SINDTZ = 59,
-    REB_BINARY_FIELD_TYPE_SEI_TANDTZ = 60,
-    REB_BINARY_FIELD_TYPE_WHFAST_CORRECTOR = 61,
-    REB_BINARY_FIELD_TYPE_WHFAST_RECALCJAC = 62, 
-    REB_BINARY_FIELD_TYPE_WHFAST_SAFEMODE = 63,
-    REB_BINARY_FIELD_TYPE_WHFAST_KEEPUNSYNC = 64,
-    REB_BINARY_FIELD_TYPE_WHFAST_ISSYNCHRON = 65,
-    REB_BINARY_FIELD_TYPE_WHFAST_TIMESTEPWARN = 66,
-    REB_BINARY_FIELD_TYPE_IAS15_EPSILON = 69,
-    REB_BINARY_FIELD_TYPE_IAS15_MINDT = 70,
-    REB_BINARY_FIELD_TYPE_IAS15_EPSILONGLOBAL = 71,
-    REB_BINARY_FIELD_TYPE_IAS15_ITERATIONSMAX = 72,
     REB_BINARY_FIELD_TYPE_PARTICLES = 85,
     REB_BINARY_FIELD_TYPE_VARCONFIG = 86,
     REB_BINARY_FIELD_TYPE_FUNCTIONPOINTERS = 87,
-    REB_BINARY_FIELD_TYPE_IAS15_ALLOCATEDN = 88,
-    REB_BINARY_FIELD_TYPE_IAS15_AT = 89,
-    REB_BINARY_FIELD_TYPE_IAS15_X0 = 90,
-    REB_BINARY_FIELD_TYPE_IAS15_V0 = 91,
-    REB_BINARY_FIELD_TYPE_IAS15_A0 = 92,
-    REB_BINARY_FIELD_TYPE_IAS15_CSX = 93,
-    REB_BINARY_FIELD_TYPE_IAS15_CSV = 94,
-    REB_BINARY_FIELD_TYPE_IAS15_CSA0 = 95,
-    REB_BINARY_FIELD_TYPE_IAS15_G = 96,
-    REB_BINARY_FIELD_TYPE_IAS15_B = 97,
-    REB_BINARY_FIELD_TYPE_IAS15_CSB = 98,
-    REB_BINARY_FIELD_TYPE_IAS15_E = 99,
-    REB_BINARY_FIELD_TYPE_IAS15_BR = 100,
-    REB_BINARY_FIELD_TYPE_IAS15_ER = 101,
-    REB_BINARY_FIELD_TYPE_WHFAST_PJ = 104,
     REB_BINARY_FIELD_TYPE_VISUALIZATION = 107,
-    REB_BINARY_FIELD_TYPE_JANUS_ALLOCATEDN = 110,
-    REB_BINARY_FIELD_TYPE_JANUS_PINT = 112,
-    REB_BINARY_FIELD_TYPE_JANUS_SCALEPOS = 113,
-    REB_BINARY_FIELD_TYPE_JANUS_SCALEVEL = 114,
-    REB_BINARY_FIELD_TYPE_JANUS_ORDER = 115,
-    REB_BINARY_FIELD_TYPE_JANUS_RECALC = 116,
-    REB_BINARY_FIELD_TYPE_WHFAST_COORDINATES = 117,
-    REB_BINARY_FIELD_TYPE_MERCURIUS_HILLFAC = 118,
-    REB_BINARY_FIELD_TYPE_MERCURIUS_SAFEMODE = 119,
-    REB_BINARY_FIELD_TYPE_MERCURIUS_ISSYNCHRON = 120,
-    REB_BINARY_FIELD_TYPE_MERCURIUS_DCRIT = 122,
     REB_BINARY_FIELD_TYPE_SAVERSION = 125,
     REB_BINARY_FIELD_TYPE_WALLTIME = 126,
     REB_BINARY_FIELD_TYPE_PYTHON_UNIT_L = 130,
     REB_BINARY_FIELD_TYPE_PYTHON_UNIT_M = 131,
     REB_BINARY_FIELD_TYPE_PYTHON_UNIT_T = 132,
-    REB_BINARY_FIELD_TYPE_MERCURIUS_COMPOS = 133,
-    REB_BINARY_FIELD_TYPE_MERCURIUS_COMVEL = 134,
     REB_BINARY_FIELD_TYPE_SAAUTOSTEP = 135,
     REB_BINARY_FIELD_TYPE_SANEXTSTEP = 136,
     REB_BINARY_FIELD_TYPE_STEPSDONE = 137,
-    REB_BINARY_FIELD_TYPE_SABA_SAFEMODE = 140,
-    REB_BINARY_FIELD_TYPE_SABA_ISSYNCHRON = 141,
     REB_BINARY_FIELD_TYPE_WHFAST_CORRECTOR2 = 143,
     REB_BINARY_FIELD_TYPE_WHFAST_KERNEL = 144,
     REB_BINARY_FIELD_TYPE_DTLASTDONE = 145,
-    REB_BINARY_FIELD_TYPE_SABA_TYPE = 146,
-    REB_BINARY_FIELD_TYPE_SABA_KEEPUNSYNC = 147,
-    REB_BINARY_FIELD_TYPE_EOS_PHI0 = 148,
-    REB_BINARY_FIELD_TYPE_EOS_PHI1 = 149,
-    REB_BINARY_FIELD_TYPE_EOS_N = 150,
-    REB_BINARY_FIELD_TYPE_EOS_SAFEMODE = 151,
-    REB_BINARY_FIELD_TYPE_EOS_ISSYNCHRON = 152,
     REB_BINARY_FIELD_TYPE_RAND_SEED = 154,
     REB_BINARY_FIELD_TYPE_TESTPARTICLEHIDEWARNINGS = 155,
 
@@ -267,9 +211,6 @@ struct reb_simulation {
     double  dt_last_done;
     unsigned long long steps_done;
     int     N;
-    int     N_var;
-    int     var_config_N;
-    struct reb_variational_configuration* var_config;   // These configuration structs contain details on variational particles. 
     int     N_active;
     int     testparticle_type;
     int     testparticle_hidewarnings;
@@ -343,8 +284,6 @@ struct reb_simulation {
     double collisions_plog;
     double max_radius[2];               // Two largest particle radii, set automatically, needed for collision search.
     long collisions_Nlog;
-    
-    // MEGNO
 
     unsigned int rand_seed; // seed for random number generator
     
@@ -387,8 +326,6 @@ struct reb_simulation {
         REB_GRAVITY_BASIC = 1,      // Basic O(N^2) direct summation algorithm, choose this for shearing sheet and periodic boundary conditions
         REB_GRAVITY_COMPENSATED = 2,// Direct summation algorithm O(N^2) but with compensated summation, slightly slower than BASIC but more accurate
         REB_GRAVITY_TREE = 3,       // Use the tree to calculate gravity, O(N log(N)), set opening_angle2 to adjust accuracy.
-        REB_GRAVITY_MERCURIUS = 4,  // Special gravity routine only for MERCURIUS
-        REB_GRAVITY_JACOBI = 5,     // Special gravity routine which includes the Jacobi terms for WH integrators 
         } gravity;
 
     // Integrators
@@ -404,28 +341,6 @@ struct reb_simulation {
     void (*free_particle_ap) (struct reb_particle* p);   // used by REBOUNDx 
     void (*extras_cleanup) (struct reb_simulation* r);
     void* extras; // Pointer to connect additional (optional) libraries, e.g., reboundx
-};
-
-
-// Structure representing a Keplerian orbit.
-struct reb_orbit {
-    double d;        // Radial distance from central object
-    double v;        // velocity relative to central object's velocity
-    double h;        // Angular momentum
-    double P;        // Orbital period
-    double n;        // Mean motion
-    double a;        // Semi-major axis
-    double e;        // Eccentricity
-    double inc;      // Inclination
-    double Omega;    // Longitude of ascending node
-    double omega;    // Argument of pericenter
-    double pomega;   // Longitude of pericenter
-    double f;        // True anomaly
-    double M;        // Mean anomaly
-    double l;        // Mean Longitude
-    double theta;    // True Longitude
-    double T;        // Time of pericenter passage
-    double rhill;    // Circular Hill radius 
 };
 
 
@@ -462,12 +377,6 @@ void reb_update_acceleration(struct reb_simulation* r);
 int reb_collision_resolve_halt(struct reb_simulation* const r, struct reb_collision c);
 int reb_collision_resolve_hardsphere(struct reb_simulation* const r, struct reb_collision c);
 int reb_collision_resolve_merge(struct reb_simulation* const r, struct reb_collision c);
-
-// Random sampling
-double reb_random_uniform(struct reb_simulation* r, double min, double max);
-double reb_random_powerlaw(struct reb_simulation* r, double min, double max, double slope);
-double reb_random_normal(struct reb_simulation* r, double variance);
-double reb_random_rayleigh(struct reb_simulation* r, double sigma);
 
 // Serialization functions.
 void reb_serialize_particle_data(struct reb_simulation* r, uint32_t* hash, double* m, double* radius, double (*xyz)[3], double (*vxvyvz)[3], double (*xyzvxvyvz)[6]); // NULL pointers will not be set.
@@ -518,24 +427,6 @@ int reb_remove_by_hash(struct reb_simulation* const r, uint32_t hash, int keepSo
 struct reb_particle* reb_get_particle_by_hash(struct reb_simulation* const r, uint32_t hash);
 int reb_get_particle_index(struct reb_particle* p); // Returns a particle's index in the simulation it's in. Needs to be in the simulation its sim pointer is pointing to. Otherwise -1 returned.
 struct reb_particle reb_get_jacobi_com(struct reb_particle* p); // Returns the Jacobi center of mass for a given particle. Used by python. Particle needs to be in a simulation.
-
-// Variational equations
-
-// Struct describing the properties of a set of variational equations.
-// If testparticle is set to -1, then it is assumed that all particles are massive
-// and all particles influence all other particles. If testparticle is >=0 then 
-// the particle with that index is assumed to be a testparticle, i.e. it does not 
-// influence other particles. For second order variational equation, index_1st_order_a/b 
-// is the index in the particle array that corresponds to the 1st order variational 
-// equations.
-struct reb_variational_configuration{
-    struct reb_simulation* sim; // Reference to the simulation.
-    int order;                  // Order of the variational equation. 1 or 2. 
-    int index;                  // Index of the first variational particle in the particles array.
-    int testparticle;           // Is this variational configuration describe a test particle? -1 if not.
-    int index_1st_order_a;      // Used for 2nd order variational particles only: Index of the first order variational particle in the particles array.
-    int index_1st_order_b;      // Used for 2nd order variational particles only: Index of the first order variational particle in the particles array.
-};
 
 // Diangnostic functions
 double reb_tools_energy(const struct reb_simulation* const r);
@@ -604,7 +495,6 @@ struct reb_display_data {
     struct reb_simulation* r;
     struct reb_simulation* r_copy;
     struct reb_particle_opengl* particle_data;
-    struct reb_orbit_opengl* orbit_data;
     struct reb_particle* particles_copy;
     struct reb_particle* p_jh_copy;
     unsigned long allocated_N;

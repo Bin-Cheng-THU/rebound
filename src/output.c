@@ -223,8 +223,6 @@ void reb_output_binary_to_stream(struct reb_simulation* r, char** bufp, size_t* 
     WRITE_FIELD(DT,                 &r->dt,                             sizeof(double));
     WRITE_FIELD(DTLASTDONE,         &r->dt_last_done,                   sizeof(double));
     WRITE_FIELD(N,                  &r->N,                              sizeof(int));
-    WRITE_FIELD(NVAR,               &r->N_var,                          sizeof(int));
-    WRITE_FIELD(VARCONFIGN,         &r->var_config_N,                   sizeof(int));
     WRITE_FIELD(NACTIVE,            &r->N_active,                       sizeof(int));
     WRITE_FIELD(TESTPARTICLETYPE,   &r->testparticle_type,              sizeof(int));
     WRITE_FIELD(TESTPARTICLEHIDEWARNINGS, &r->testparticle_hidewarnings,sizeof(int));
@@ -299,9 +297,6 @@ void reb_output_binary_to_stream(struct reb_simulation* r, char** bufp, size_t* 
             reb_output_stream_write(bufp, &allocatedsize, sizep, &op,sizeof(struct reb_particle));
         }
     } 
-    if (r->var_config){
-        WRITE_FIELD(VARCONFIG,      r->var_config,                      sizeof(struct reb_variational_configuration)*r->var_config_N);
-    }
     // To output size of binary file, need to calculate it first. 
     r->simulationarchive_size_first = (*sizep)+sizeof(struct reb_binary_field)*2+sizeof(long)+sizeof(struct reb_simulationarchive_blob);
     WRITE_FIELD(SASIZEFIRST,        &r->simulationarchive_size_first,   sizeof(long));

@@ -113,8 +113,6 @@ int reb_input_field(struct reb_simulation* r, FILE* inf, enum reb_input_binary_m
         CASE(DT,                 &r->dt);
         CASE(DTLASTDONE,         &r->dt_last_done);
         CASE(N,                  &r->N);
-        CASE(NVAR,               &r->N_var);
-        CASE(VARCONFIGN,         &r->var_config_N);
         CASE(NACTIVE,            &r->N_active);
         CASE(TESTPARTICLETYPE,   &r->testparticle_type);
         CASE(TESTPARTICLEHIDEWARNINGS,   &r->testparticle_hidewarnings);
@@ -187,18 +185,6 @@ int reb_input_field(struct reb_simulation* r, FILE* inf, enum reb_input_binary_m
             if (r->gravity==REB_GRAVITY_TREE || r->collision==REB_COLLISION_TREE || r->collision==REB_COLLISION_LINETREE){
                 for (int l=0;l<r->allocatedN;l++){
                     reb_tree_add_particle_to_tree(r, l);
-                }
-            }
-            break;
-        case REB_BINARY_FIELD_TYPE_VARCONFIG:
-            if (r->var_config){
-                free(r->var_config);
-            }
-            if (r->var_config_N>0){
-                r->var_config = malloc(field.size);
-                reb_fread(r->var_config, field.size,1,inf,mem_stream);
-                for (int l=0;l<r->var_config_N;l++){
-                    r->var_config[l].sim = r;
                 }
             }
             break;

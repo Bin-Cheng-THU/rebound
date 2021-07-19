@@ -90,9 +90,7 @@ void reb_update_acceleration(struct reb_simulation* r){
 	PROFILING_STOP(PROFILING_CAT_INTEGRATOR)
 	PROFILING_START()
 	reb_calculate_acceleration(r);
-	if (r->N_var){
-		reb_calculate_acceleration_var(r);
-	}
+
 	if (r->additional_forces){
         // For Mercurius:
         // Additional forces are only calculated in the kick step, not during close encounter

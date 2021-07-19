@@ -72,12 +72,11 @@ double reb_random_rayleigh(struct reb_simulation* r, double sigma){
 /// Other helper routines
 double reb_tools_energy(const struct reb_simulation* const r){
     const int N = r->N;
-    const int N_var = r->N_var;
-    const int _N_active = (r->N_active==-1)?(N-N_var):r->N_active;
+    const int _N_active = (r->N_active==-1)?(N):r->N_active;
     const struct reb_particle* restrict const particles = r->particles;
     double e_kin = 0.;
     double e_pot = 0.;
-    int N_interact = (r->testparticle_type==0)?_N_active:(N-N_var);
+    int N_interact = (r->testparticle_type==0)?_N_active:(N);
     for (int i=0;i<N_interact;i++){
         struct reb_particle pi = particles[i];
         e_kin += 0.5 * pi.m * (pi.vx*pi.vx + pi.vy*pi.vy + pi.vz*pi.vz);
@@ -99,9 +98,8 @@ double reb_tools_energy(const struct reb_simulation* const r){
 struct reb_vec3d reb_tools_angular_momentum(const struct reb_simulation* const r){
 	const int N = r->N;
 	const struct reb_particle* restrict const particles = r->particles;
-	const int N_var = r->N_var;
     struct reb_vec3d L = {0};
-    for (int i=0;i<N-N_var;i++){
+    for (int i=0;i<N;i++){
 		struct reb_particle pi = particles[i];
         L.x += pi.m*(pi.y*pi.vz - pi.z*pi.vy);
         L.y += pi.m*(pi.z*pi.vx - pi.x*pi.vz);
@@ -111,7 +109,7 @@ struct reb_vec3d reb_tools_angular_momentum(const struct reb_simulation* const r
 }
 
 void reb_serialize_particle_data(struct reb_simulation* r, uint32_t* hash, double* m, double* radius, double (*xyz)[3], double (*vxvyvz)[3], double (*xyzvxvyvz)[6]){
-    const int N_real = r->N - r->N_var;
+    const int N_real = r->N;
     struct reb_particle* restrict const particles = r->particles;
     for (int i=0;i<N_real;i++){
         if (hash){
@@ -145,7 +143,7 @@ void reb_serialize_particle_data(struct reb_simulation* r, uint32_t* hash, doubl
 }
 
 void reb_set_serialized_particle_data(struct reb_simulation* r, uint32_t* hash, double* m, double* radius, double (*xyz)[3], double (*vxvyvz)[3], double (*xyzvxvyvz)[6]){
-    const int N_real = r->N - r->N_var;
+    const int N_real = r->N;
     struct reb_particle* restrict const particles = r->particles;
     for (int i=0;i<N_real;i++){
         if (hash){
@@ -226,29 +224,6 @@ double reb_tools_mod2pi(double f){
 
 #define TINY 1.E-308 		///< Close to smallest representable floating point number, used for orbit calculation
 
-struct reb_orbit reb_orbit_nan(void){
-    struct reb_orbit o;
-    o.d = nan("");
-    o.v = nan("");
-    o.h = nan("");
-    o.P = nan("");
-    o.n = nan("");
-    o.a = nan("");
-    o.e = nan("");
-    o.inc = nan("");
-    o.Omega = nan("");
-    o.omega = nan("");
-    o.pomega = nan("");
-    o.f = nan("");
-    o.M = nan("");
-    o.l = nan("");
-    o.theta = nan("");
-    o.T = nan("");
-    o.rhill = nan("");
-
-    return o;
-}
-
 #define MIN_REL_ERROR 1.0e-12	///< Close to smallest relative floating point number, used for orbit calculation
 #define MIN_INC 1.e-8		///< Below this inclination, the broken angles pomega and theta equal the corresponding 
 							///< unbroken angles to within machine precision, so a practical boundary for planar orbits
@@ -273,9 +248,6 @@ static double acos2(double num, double denom, double disambiguator){
 	}
 	return val;
 }
-
-/***********************************
- * Variational Equations and Megno */
 
 #define ROT32(x, y) ((x << y) | (x >> (32 - y))) // avoid effort
 static uint32_t reb_murmur3_32(const char *key, uint32_t len, uint32_t seed) {
