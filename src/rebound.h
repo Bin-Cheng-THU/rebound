@@ -42,6 +42,7 @@
 #define GITHASH notavailable0000000000000000000000000001 
 #endif // GITHASH
 
+// 全局变量
 extern const char* reb_build_str;   ///< Date and time build string.
 extern const char* reb_version_str; ///< Version string.
 extern const char* reb_githash_str; ///< Current git hash.
@@ -238,8 +239,8 @@ struct reb_simulation {
     double exit_min_distance;
     double usleep;
     struct reb_display_data* display_data; // Datastructure stores visualization related data. Does not have to be modified by the user. 
-    int track_energy_offset;
-    double energy_offset;
+    int track_energy_offset;        // 是否记录能量变化
+    double energy_offset;           // 能量变化
     double walltime;
     uint32_t python_unit_l;         // Only used for when working with units in python.
     uint32_t python_unit_m;         // Only used for when working with units in python.
@@ -338,7 +339,6 @@ struct reb_simulation {
     void (*display_heartbeat) (struct reb_simulation* r);
     double (*coefficient_of_restitution) (const struct reb_simulation* const r, double v); 
     int (*collision_resolve) (struct reb_simulation* const r, struct reb_collision);
-    void (*free_particle_ap) (struct reb_particle* p);   // used by REBOUNDx 
     void (*extras_cleanup) (struct reb_simulation* r);
     void* extras; // Pointer to connect additional (optional) libraries, e.g., reboundx
 };
@@ -378,10 +378,6 @@ int reb_collision_resolve_halt(struct reb_simulation* const r, struct reb_collis
 int reb_collision_resolve_hardsphere(struct reb_simulation* const r, struct reb_collision c);
 int reb_collision_resolve_merge(struct reb_simulation* const r, struct reb_collision c);
 
-// Serialization functions.
-void reb_serialize_particle_data(struct reb_simulation* r, uint32_t* hash, double* m, double* radius, double (*xyz)[3], double (*vxvyvz)[3], double (*xyzvxvyvz)[6]); // NULL pointers will not be set.
-void reb_set_serialized_particle_data(struct reb_simulation* r, uint32_t* hash, double* m, double* radius, double (*xyz)[3], double (*vxvyvz)[3], double (*xyzvxvyvz)[6]); // Null pointers will be ignored.
-
 // Output functions
 int reb_output_check(struct reb_simulation* r, double interval);
 void reb_output_timing(struct reb_simulation* r, const double tmax);
@@ -409,13 +405,6 @@ enum reb_input_binary_messages {
     REB_INPUT_BINARY_WARNING_CORRUPTFILE = 512,
 };
 
-
-// Miscellaneous functions
-uint32_t reb_hash(const char* str);
-double reb_tools_mod2pi(double f);
-void reb_tools_init_plummer(struct reb_simulation* r, int _N, double M, double R); // This function sets up a Plummer sphere, N=number of particles, M=total mass, R=characteristic radius
-void reb_run_heartbeat(struct reb_simulation* const r);  // used internally
-
 // Functions to add and initialize particles
 struct reb_particle reb_particle_nan(void); // Returns a reb_particle structure with fields/hash/ptrs initialized to nan/0/NULL. 
 void reb_add(struct reb_simulation* const r, struct reb_particle pt);
@@ -427,11 +416,6 @@ int reb_remove_by_hash(struct reb_simulation* const r, uint32_t hash, int keepSo
 struct reb_particle* reb_get_particle_by_hash(struct reb_simulation* const r, uint32_t hash);
 int reb_get_particle_index(struct reb_particle* p); // Returns a particle's index in the simulation it's in. Needs to be in the simulation its sim pointer is pointing to. Otherwise -1 returned.
 struct reb_particle reb_get_jacobi_com(struct reb_particle* p); // Returns the Jacobi center of mass for a given particle. Used by python. Particle needs to be in a simulation.
-
-// Diangnostic functions
-double reb_tools_energy(const struct reb_simulation* const r);
-struct reb_vec3d reb_tools_angular_momentum(const struct reb_simulation* const r);
-
 
 // Simulation Archive
 struct reb_simulationarchive_blob {  // Used in the binary file to identify data blobs

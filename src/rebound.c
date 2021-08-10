@@ -290,11 +290,6 @@ void reb_free_pointers(struct reb_simulation* const r){
     }
     free(r->gravity_cs  );
     free(r->collisions  );
-    if(r->free_particle_ap){
-        for(int i=0; i<r->N; i++){
-            r->free_particle_ap(&r->particles[i]);
-        }
-    }
     free(r->particles   );
     free(r->particle_lookup_table);
     if (r->messages){
@@ -331,7 +326,6 @@ int reb_reset_function_pointers(struct reb_simulation* const r){
         r->display_heartbeat ||
         r->pre_timestep_modifications ||
         r->post_timestep_modifications ||
-        r->free_particle_ap ||
         r->extras_cleanup){
       wasnotnull = 1;
     }
@@ -342,7 +336,6 @@ int reb_reset_function_pointers(struct reb_simulation* const r){
     r->display_heartbeat    = NULL;
     r->pre_timestep_modifications  = NULL;
     r->post_timestep_modifications  = NULL;
-    r->free_particle_ap = NULL;
     r->extras_cleanup = NULL;
     return wasnotnull;
 }

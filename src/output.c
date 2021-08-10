@@ -277,8 +277,7 @@ void reb_output_binary_to_stream(struct reb_simulation* r, char** bufp, size_t* 
         r->collision_resolve ||
         r->additional_forces ||
         r->heartbeat ||
-        r->post_timestep_modifications ||
-        r->free_particle_ap){
+        r->post_timestep_modifications){
         functionpointersused = 1;
     }
     WRITE_FIELD(FUNCTIONPOINTERS,   &functionpointersused,              sizeof(int));

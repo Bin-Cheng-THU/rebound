@@ -26,7 +26,23 @@
 #define _COLLISIONS_H
 /**
  * @brief Search for collisions and resolve them.
+ * @param r REBOUND Simulation to consider
  */
 void reb_collision_search(struct reb_simulation* const r);
+
+/*
+ * @brief halt the simulation.
+ * @param r REBOUND Simulation to consider
+ * @param c REBOUND collision event
+int reb_collision_resolve_halt(struct reb_simulation* const r, struct reb_collision c);
+ * @brief hard-sphere model for impact events.
+ * @param r REBOUND Simulation to consider
+ * @param c REBOUND collision event
+int reb_collision_resolve_hardsphere(struct reb_simulation* const r, struct reb_collision c);
+ * @brief Merge particles when impact.
+ * @param r REBOUND Simulation to consider
+ * @param c REBOUND collision event
+int reb_collision_resolve_merge(struct reb_simulation* const r, struct reb_collision c);
+*/
 
 #endif // _COLLISIONS_H

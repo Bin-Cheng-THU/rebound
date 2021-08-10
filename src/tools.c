@@ -222,33 +222,6 @@ double reb_tools_mod2pi(double f){
     return fmod(pi2 + fmod(f, pi2), pi2);
 }
 
-#define TINY 1.E-308 		///< Close to smallest representable floating point number, used for orbit calculation
-
-#define MIN_REL_ERROR 1.0e-12	///< Close to smallest relative floating point number, used for orbit calculation
-#define MIN_INC 1.e-8		///< Below this inclination, the broken angles pomega and theta equal the corresponding 
-							///< unbroken angles to within machine precision, so a practical boundary for planar orbits
-							//
-#define MIN_ECC 1.e-8       ///< Below this eccentricity, corrections at order e^2 are below machine precision, so we use
-                            ///< stable expressions accurate to O(e) for the mean longitude below for near-circular orbits.
-// returns acos(num/denom), using disambiguator to tell which quadrant to return.  
-// will return 0 or pi appropriately if num is larger than denom by machine precision
-// and will return 0 if denom is exactly 0.
-
-static double acos2(double num, double denom, double disambiguator){
-	double val;
-	double cosine = num/denom;
-	if(cosine > -1. && cosine < 1.){
-		val = acos(cosine);
-		if(disambiguator < 0.){
-			val = - val;
-		}
-	}
-	else{
-		val = (cosine <= -1.) ? M_PI : 0.;
-	}
-	return val;
-}
-
 #define ROT32(x, y) ((x << y) | (x >> (32 - y))) // avoid effort
 static uint32_t reb_murmur3_32(const char *key, uint32_t len, uint32_t seed) {
     // Source: Wikipedia
