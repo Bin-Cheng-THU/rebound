@@ -112,7 +112,7 @@ void reb_boundary_check(struct reb_simulation* const r){
 
 const static struct reb_ghostbox nan_ghostbox = {.shiftx = 0, .shifty = 0, .shiftz = 0, .shiftvx = 0, .shiftvy = 0, .shiftvz = 0};
 
-// 这里的ghostbox应该是仿真计算域，由于
+// 这里的ghostbox应该是仿真计算域，其实是用来计算环形引力场或周期边界条件的，需要在计算域周边加上虚计算域，以精细化边界引力场的计算
 struct reb_ghostbox reb_boundary_get_ghostbox(struct reb_simulation* const r, int i, int j, int k){
 	switch(r->boundary){
 		case REB_BOUNDARY_OPEN:

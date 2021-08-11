@@ -375,6 +375,7 @@ void reb_update_acceleration(struct reb_simulation* r);
 
 // Collision resolve functions
 int reb_collision_resolve_halt(struct reb_simulation* const r, struct reb_collision c);
+int reb_collision_resolve_halt(struct reb_simulation* const r, struct reb_collision c);
 int reb_collision_resolve_hardsphere(struct reb_simulation* const r, struct reb_collision c);
 int reb_collision_resolve_merge(struct reb_simulation* const r, struct reb_collision c);
 

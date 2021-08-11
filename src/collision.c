@@ -52,13 +52,13 @@ static void reb_tree_check_for_overlapping_trajectories_in_cell(struct reb_simul
 void reb_collision_search(struct reb_simulation* const r){
     int N = r->N;
     int Ninner = N;
-    int* mercurius_map = NULL;
     int collisions_N = 0;
     const struct reb_particle* const particles = r->particles;
     switch (r->collision){
         case REB_COLLISION_NONE:
-        break;
+            break;
         case REB_COLLISION_DIRECT:
+        // 遍历搜索所有接触对，若两者存在重叠，并且正在互相接近，则认为发生碰撞
         {
             // Loop over ghost boxes, but only the inner most ring.
             int nghostxcol = (r->nghostx>1?1:r->nghostx);
@@ -73,9 +73,6 @@ void reb_collision_search(struct reb_simulation* const r){
                     if (reb_sigint) return;
 #endif // OPENMP
                     int ip = i;
-                    if (mercurius_map){
-                        ip = mercurius_map[i];
-                    }
                     struct reb_particle p1 = particles[ip];
                     struct reb_ghostbox gborig = reb_boundary_get_ghostbox(r, gbx,gby,gbz);
                     struct reb_ghostbox gb = gborig;
@@ -91,9 +88,6 @@ void reb_collision_search(struct reb_simulation* const r){
                         // Do not collide particle with itself.
                         if (i==j) continue;
                         int jp = j;
-                        if (mercurius_map){
-                            jp = mercurius_map[j];
-                        }
                         struct reb_particle p2 = particles[jp];
                         double dx = gb.shiftx - p2.x; 
                         double dy = gb.shifty - p2.y; 
@@ -126,6 +120,7 @@ void reb_collision_search(struct reb_simulation* const r){
         }
         break;
         case REB_COLLISION_LINE:
+        // 二分遍历搜索接触对，若两者上个步长、该步长或临近步长发生重叠，则认为发生碰撞
         {
             double dt_last_done = r->dt_last_done;
             // Loop over ghost boxes, but only the inner most ring.
@@ -440,13 +435,6 @@ void reb_collision_search(struct reb_simulation* const r){
             }
         }
     }
-}
-
-/**
- * @brief Workaround for python setters.
- **/
-void reb_set_collision_resolve(struct reb_simulation* r, int (*resolve) (struct reb_simulation* const r, struct reb_collision c)){
-    r->collision_resolve = resolve;
 }
 
 /**
